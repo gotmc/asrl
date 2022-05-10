@@ -15,7 +15,7 @@ import (
 
 // Device models a serial device and implements the ivi.Driver interface.
 type Device struct {
-	conn serial.Port
+	port serial.Port
 }
 
 // NewDevice opens a serial Device using the given VISA address resource string.
@@ -37,23 +37,29 @@ func NewDevice(address string) (*Device, error) {
 		return &d, err
 	}
 
-	d.conn = port
+	d.port = port
 	return &d, nil
 }
 
 // Write writes the given data to the network connection.
 func (d *Device) Write(p []byte) (n int, err error) {
-	return d.conn.Write(p)
+	return d.port.Write(p)
 }
 
 // Read reads from the network connection into the given byte slice.
 func (d *Device) Read(p []byte) (n int, err error) {
-	return d.conn.Read(p)
+	return d.port.Read(p)
 }
 
 // Close closes the underlying network connection.
 func (d *Device) Close() error {
-	return d.conn.Close()
+	if err := d.port.ResetInputBuffer(); err != nil {
+		return err
+	}
+	if err := d.port.ResetOutputBuffer(); err != nil {
+		return err
+	}
+	return d.port.Close()
 }
 
 // WriteString writes a string using the underlying network connection.
@@ -80,5 +86,5 @@ func (d *Device) Query(cmd string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bufio.NewReader(d.conn).ReadString('\n')
+	return bufio.NewReader(d.port).ReadString('\n')
 }
