@@ -1,6 +1,6 @@
 module github.com/gotmc/asrl
 
-go 1.18
+go 1.21
 
 require go.bug.st/serial v1.6.0
 
