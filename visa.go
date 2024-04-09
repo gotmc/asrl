@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The asrl developers. All rights reserved.
+// Copyright (c) 2017-2024 The asrl developers. All rights reserved.
 // Project site: https://github.com/gotmc/asrl
 // Use of this source code is governed by a MIT-style license that
 // can be found in the LICENSE.txt file for the project.
@@ -25,7 +25,9 @@ type VisaResource struct {
 	resourceClass  string
 }
 
-// NewVisaResource creates a new VisaResource using the given VISA resourceString.
+// NewVisaResource creates a new VisaResource using the given VISA
+// resourceString. If the dataflow isn't provided as part of the VISA resource
+// string, the dataflow will default to 8N1.
 func NewVisaResource(resourceString string) (visa *VisaResource, err error) {
 	visa = &VisaResource{
 		resourceString: resourceString,
@@ -76,6 +78,18 @@ func NewVisaResource(resourceString string) (visa *VisaResource, err error) {
 			visa.dataBits = 8
 			visa.parity = serial.NoParity
 			visa.stopBits = serial.TwoStopBits
+		case "7E2":
+			visa.dataBits = 7
+			visa.parity = serial.EvenParity
+			visa.stopBits = serial.TwoStopBits
+		case "7E1":
+			visa.dataBits = 7
+			visa.parity = serial.EvenParity
+			visa.stopBits = serial.OneStopBit
+		case "7O1":
+			visa.dataBits = 7
+			visa.parity = serial.OddParity
+			visa.stopBits = serial.OneStopBit
 		default:
 			return visa, errors.New("visa: dataflow error")
 		}

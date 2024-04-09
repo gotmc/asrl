@@ -31,6 +31,30 @@ func TestParsingVisaResourceString(t *testing.T) {
 			9600, 8, serial.NoParity, serial.TwoStopBits,
 			"INSTR", false, errors.New(""),
 		},
+		{
+			"ASRL::/dev/tty.usbserial-PX484GRU::115200::8N1::INSTR",
+			"ASRL", "/dev/tty.usbserial-PX484GRU",
+			115200, 8, serial.NoParity, serial.OneStopBit,
+			"INSTR", false, errors.New(""),
+		},
+		{
+			"ASRL::/dev/tty.usbserial-PX484GRU::115200::7E2::INSTR",
+			"ASRL", "/dev/tty.usbserial-PX484GRU",
+			115200, 7, serial.EvenParity, serial.TwoStopBits,
+			"INSTR", false, errors.New(""),
+		},
+		{
+			"ASRL::/dev/tty.usbserial-PX484GRU::115200::7E1::INSTR",
+			"ASRL", "/dev/tty.usbserial-PX484GRU",
+			115200, 7, serial.EvenParity, serial.OneStopBit,
+			"INSTR", false, errors.New(""),
+		},
+		{
+			"ASRL::/dev/tty.usbserial-PX484GRU::115200::7O1::INSTR",
+			"ASRL", "/dev/tty.usbserial-PX484GRU",
+			115200, 7, serial.OddParity, serial.OneStopBit,
+			"INSTR", false, errors.New(""),
+		},
 	}
 	for _, testCase := range testCases {
 		resource, err := NewVisaResource(testCase.resourceString)
