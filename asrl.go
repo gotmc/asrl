@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The asrl developers. All rights reserved.
+// Copyright (c) 2017-2024 The asrl developers. All rights reserved.
 // Project site: https://github.com/gotmc/asrl
 // Use of this source code is governed by a MIT-style license that
 // can be found in the LICENSE.txt file for the project.
@@ -8,23 +8,29 @@ package asrl
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"go.bug.st/serial"
 )
 
 // Device models a serial device and implements the ivi.Driver interface.
 type Device struct {
-	port serial.Port
+	EndMark byte
+	port    serial.Port
 }
 
 // NewDevice opens a serial Device using the given VISA address resource string.
 func NewDevice(address string) (*Device, error) {
-	var d Device
 	v, err := NewVisaResource(address)
 	if err != nil {
-		return &d, err
+		return nil, err
 	}
+	log.Printf("Baud rate = %d", v.baud)
+	log.Printf("Parity = %v", v.parity)
+	log.Printf("Data bits = %d", v.dataBits)
+	log.Printf("Stop bits = %v", v.stopBits)
 
 	mode := &serial.Mode{
 		BaudRate: v.baud,
@@ -34,11 +40,10 @@ func NewDevice(address string) (*Device, error) {
 	}
 	port, err := serial.Open(v.address, mode)
 	if err != nil {
-		return &d, err
+		return nil, err
 	}
 
-	d.port = port
-	return &d, nil
+	return &Device{port: port, EndMark: '\n'}, nil
 }
 
 // Write writes the given data to the network connection.
@@ -53,12 +58,6 @@ func (d *Device) Read(p []byte) (n int, err error) {
 
 // Close closes the underlying network connection.
 func (d *Device) Close() error {
-	if err := d.port.ResetInputBuffer(); err != nil {
-		return err
-	}
-	if err := d.port.ResetOutputBuffer(); err != nil {
-		return err
-	}
 	return d.port.Close()
 }
 
@@ -70,11 +69,24 @@ func (d *Device) WriteString(s string) (n int, err error) {
 // Command sends the SCPI/ASCII command to the underlying network connection. A
 // newline character is automatically added to the end of the string.
 func (d *Device) Command(format string, a ...interface{}) error {
+	// Debugging some timing issues that I believe are related to handshaking.
+	showModemStatusBits(d.port)
+
 	cmd := format
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
-	_, err := d.WriteString(strings.TrimSpace(cmd) + "\n")
+	cmd = strings.TrimSpace(cmd) + string(d.EndMark)
+	log.Printf("sending cmd: %s", cmd)
+	_, err := d.WriteString(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Debugging some timing issues that I believe are related to handshaking.
+	showModemStatusBits(d.port)
+	nap(200 * time.Millisecond)
+	showModemStatusBits(d.port)
 	return err
 }
 
@@ -82,9 +94,37 @@ func (d *Device) Command(format string, a ...interface{}) error {
 // returns a string. A newline character is automatically added to the query
 // command sent to the instrument.
 func (d *Device) Query(cmd string) (string, error) {
-	err := d.Command(cmd)
+	msb, err := d.port.GetModemStatusBits()
 	if err != nil {
 		return "", err
 	}
+	log.Printf("%#v", msb)
+	log.Printf("Getting ready to send cmd: %s", cmd)
+	err = d.Command(cmd)
+	if err != nil {
+		return "", err
+	}
+
 	return bufio.NewReader(d.port).ReadString('\n')
+}
+
+func nap(duration time.Duration) {
+	log.Printf("sleep for %s", duration)
+	time.Sleep(duration)
+}
+
+func showModemStatusBits(port serial.Port) {
+	msb, err := port.GetModemStatusBits()
+	if err != nil {
+		log.Printf("error getting modem status bits: %s", err)
+	}
+	log.Printf("DSR = %t", msb.DSR)
+}
+
+func getDSR(port serial.Port) (bool, error) {
+	msb, err := port.GetModemStatusBits()
+	if err != nil {
+		return false, err
+	}
+	return msb.DSR, nil
 }
