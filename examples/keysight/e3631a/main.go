@@ -51,7 +51,6 @@ func main() {
 	defer dev.Close()
 
 	// Query the identification of the function generator.
-	log.Println("Query the identification.")
 	idn, err := dev.Query("*IDN?\r\n")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
@@ -67,16 +66,13 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		log.Printf("ex app sending cmd = %s", cmd)
 		if err = dev.Command(cmd); err != nil {
 			log.Printf("Received error: %s", err)
 			log.Fatal(err)
 		}
-		log.Printf("ex app sent cmd = %s", cmd)
 	}
 
 	// Query the voltage output
-	log.Println("Query the voltage output.")
 	vc, err := dev.Query("appl? p6v")
 	if err != nil {
 		log.Fatalf("error querying serial port: %s", err)

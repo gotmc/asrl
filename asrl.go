@@ -17,8 +17,9 @@ import (
 
 // Device models a serial device and implements the ivi.Driver interface.
 type Device struct {
-	EndMark byte
-	port    serial.Port
+	EndMark   byte
+	DelayTime time.Duration
+	port      serial.Port
 }
 
 // NewDevice opens a serial Device using the given VISA address resource string.
@@ -43,7 +44,11 @@ func NewDevice(address string) (*Device, error) {
 		return nil, err
 	}
 
-	return &Device{port: port, EndMark: '\n'}, nil
+	return &Device{
+		port:      port,
+		EndMark:   '\n',
+		DelayTime: 50 * time.Millisecond,
+	}, nil
 }
 
 // Write writes the given data to the network connection.
@@ -69,24 +74,17 @@ func (d *Device) WriteString(s string) (n int, err error) {
 // Command sends the SCPI/ASCII command to the underlying network connection. A
 // newline character is automatically added to the end of the string.
 func (d *Device) Command(format string, a ...interface{}) error {
-	// Debugging some timing issues that I believe are related to handshaking.
-	showModemStatusBits(d.port)
-
+	d.napIfDataSetNotReady()
 	cmd := format
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
 	cmd = strings.TrimSpace(cmd) + string(d.EndMark)
-	log.Printf("sending cmd: %s", cmd)
 	_, err := d.WriteString(cmd)
 	if err != nil {
 		return err
 	}
 
-	// Debugging some timing issues that I believe are related to handshaking.
-	showModemStatusBits(d.port)
-	nap(200 * time.Millisecond)
-	showModemStatusBits(d.port)
 	return err
 }
 
@@ -94,37 +92,52 @@ func (d *Device) Command(format string, a ...interface{}) error {
 // returns a string. A newline character is automatically added to the query
 // command sent to the instrument.
 func (d *Device) Query(cmd string) (string, error) {
-	msb, err := d.port.GetModemStatusBits()
+	err := d.Command(cmd)
 	if err != nil {
 		return "", err
 	}
-	log.Printf("%#v", msb)
-	log.Printf("Getting ready to send cmd: %s", cmd)
-	err = d.Command(cmd)
-	if err != nil {
-		return "", err
-	}
-
 	return bufio.NewReader(d.port).ReadString('\n')
 }
 
-func nap(duration time.Duration) {
-	log.Printf("sleep for %s", duration)
-	time.Sleep(duration)
-}
-
-func showModemStatusBits(port serial.Port) {
+func isDSR(port serial.Port) bool {
 	msb, err := port.GetModemStatusBits()
 	if err != nil {
 		log.Printf("error getting modem status bits: %s", err)
 	}
-	log.Printf("DSR = %t", msb.DSR)
+	return msb.DSR
 }
 
-func getDSR(port serial.Port) (bool, error) {
-	msb, err := port.GetModemStatusBits()
-	if err != nil {
-		return false, err
+func (d *Device) napIfDataSetNotReady() {
+	//------------------------------------------------------------------------//
+	//
+	//                       ___====-_  _-====___
+	//                 _--^^^#####//      \\#####^^^--_
+	//              _-^##########// (    ) \\##########^-_
+	//             -############//  |\^^/|  \\############-
+	//           _/############//   (@::@)   \\############\_
+	//          /#############((     \\//     ))#############\
+	//         -###############\\    (oo)    //###############-
+	//        -#################\\  / VV \  //#################-
+	//       -###################\\/      \//###################-
+	//      _#/|##########/\######(   /\   )######/\##########|\#_
+	//      |/ |#/\#/\#/\/  \#/\##\  |  |  /##/\#/  \/\#/\#/\#| \|
+	//      `  |/  V  V  `   V  \#\| |  | |/#/  V   '  V  V  \|  '
+	//         `   `  `      `   / | |  | | \   '      '  '   '
+	//                          (  | |  | |  )
+	//                         __\ | |  | | /__
+	//                        (vvv(VVV)(VVV)vvv)
+	//------------------------------------------------------------------------//
+	// If I use 40 ms instead of 50 ms for the delay time, the Keysight E3631A DC
+	// power supply will hang when sending commands/queries.
+	//------------------------------------------------------------------------//
+	for !isDSR(d.port) {
+		// log.Printf("DSR is false, so napping for %s", duration)
+		time.Sleep(d.DelayTime)
 	}
-	return msb.DSR, nil
+	//------------------------------------------------------------------------//
+	// Sleep a bit longer once the Data Set Ready is true. Without this, the
+	// Keysight E3631A DC power supply will sometimes hang when sending
+	// commands/queries.
+	time.Sleep(d.DelayTime)
+	//------------------------------------------------------------------------//
 }
