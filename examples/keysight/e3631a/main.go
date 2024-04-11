@@ -3,6 +3,13 @@
 // Use of this source code is governed by a MIT-style license that
 // can be found in the LICENSE.txt file for the project.
 
+/*
+To communicate with the Keysight E3631A DC power supply using the serial port,
+I used StarTech's [USB to Serial RS232 Adapter - DB9 Serial DCE Adapter Cable
+with FTDI - Null Modem - USB 1.1 / 2.0 - Bus-Powered][cable] model ICUSB232FTN.
+
+[cable]: https://www.startech.com/en-us/cards-adapters/icusb232ftn
+*/
 package main
 
 import (
