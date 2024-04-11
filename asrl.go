@@ -47,7 +47,7 @@ func NewDevice(address string) (*Device, error) {
 	return &Device{
 		port:      port,
 		EndMark:   '\n',
-		DelayTime: 50 * time.Millisecond,
+		DelayTime: 70 * time.Millisecond,
 	}, nil
 }
 
@@ -73,7 +73,7 @@ func (d *Device) WriteString(s string) (n int, err error) {
 
 // Command sends the SCPI/ASCII command to the underlying network connection. A
 // newline character is automatically added to the end of the string.
-func (d *Device) Command(format string, a ...interface{}) error {
+func (d *Device) Command(format string, a ...any) error {
 	d.napIfDataSetNotReady()
 	cmd := format
 	if a != nil {
@@ -92,10 +92,14 @@ func (d *Device) Command(format string, a ...interface{}) error {
 // returns a string. A newline character is automatically added to the query
 // command sent to the instrument.
 func (d *Device) Query(cmd string) (string, error) {
+	log.Printf("starting query for %s", cmd)
 	err := d.Command(cmd)
+	log.Printf("command sent to query for %s", cmd)
 	if err != nil {
+		log.Printf("error received from command sent to query for %s", cmd)
 		return "", err
 	}
+	log.Printf("Just before reading bufio string for query for %s", cmd)
 	return bufio.NewReader(d.port).ReadString('\n')
 }
 
@@ -128,10 +132,11 @@ func (d *Device) napIfDataSetNotReady() {
 	//                        (vvv(VVV)(VVV)vvv)
 	//------------------------------------------------------------------------//
 	// If I use 40 ms instead of 50 ms for the delay time, the Keysight E3631A DC
-	// power supply will hang when sending commands/queries.
+	// power supply will hang when sending commands/queries. Using 50 ms causes
+	// the power supply to hang sometimes. I'm currently using 70 ms to be safe.
 	//------------------------------------------------------------------------//
 	for !isDSR(d.port) {
-		// log.Printf("DSR is false, so napping for %s", duration)
+		log.Printf("DSR is false, so napping for %s", d.DelayTime)
 		time.Sleep(d.DelayTime)
 	}
 	//------------------------------------------------------------------------//

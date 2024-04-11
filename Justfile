@@ -26,3 +26,11 @@ cover:
 # List the outdated go modules.
 outdated:
   go list -u -m all
+
+# Run the ASRL Keysight E3631A power supply example application.
+ex1 port:
+  #!/usr/bin/env bash
+  echo '# ASRL Keysight E3631A Example Application'
+  cd {{justfile_directory()}}/examples/keysight/e3631a
+  env go build -o e3631a
+  ./e3631a -port={{port}}
