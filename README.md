@@ -1,6 +1,7 @@
 # asrl
 
-Go-based implementation of an Asynchronous Serial (ASRL) interface for IVI.
+Go-based implementation of an Asynchronous Serial (ASRL) interface for
+Interchangeable Virtual Instrument (IVI) drivers.
 
 [![GoDoc][godoc badge]][godoc link]
 [![Go Report Card][report badge]][report card]
@@ -10,11 +11,11 @@ Go-based implementation of an Asynchronous Serial (ASRL) interface for IVI.
 
 The [asrl][] package enables controlling test equipment (e.g., oscilloscopes,
 function generators, multimeters, etc.) over serial port. While this package can
-be used by itself to send [SCPI][] commands to a piece of test equipment, it
-also serves to provide an Instrument interface for both the [ivi][] and [visa][]
-packages. The [ivi][] package provides standardized APIs for programming test
-instruments following the [Interchangeable Virtual Instrument (IVI)
-standard][ivi-specs].
+be used by itself to send Standard Commands for Programmable Instruments
+([SCPI][]) commands to a piece of test equipment, it also serves to provide an
+Instrument interface for both the [ivi][] and [visa][] packages. The [ivi][]
+package provides standardized APIs for programming test instruments following
+the [Interchangeable Virtual Instrument (IVI) standard][ivi-specs].
 
 ## Implementations
 
