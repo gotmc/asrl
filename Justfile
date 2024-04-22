@@ -28,9 +28,17 @@ outdated:
   go list -u -m all
 
 # Run the ASRL Keysight E3631A power supply example application.
-ex1 port:
+e3631a port:
   #!/usr/bin/env bash
   echo '# ASRL Keysight E3631A Example Application'
   cd {{justfile_directory()}}/examples/keysight/e3631a
   env go build -o e3631a
   ./e3631a -port={{port}}
+
+# Run the ASRL Keysight E3631A power supply example application.
+ds345 port:
+  #!/usr/bin/env bash
+  echo '# ASRL SRS DS345 Example Application'
+  cd {{justfile_directory()}}/examples/srs/ds345
+  env go build -o ds345
+  ./ds345 -port={{port}}
