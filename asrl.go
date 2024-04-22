@@ -17,9 +17,10 @@ import (
 
 // Device models a serial device and implements the ivi.Driver interface.
 type Device struct {
-	EndMark   byte
-	DelayTime time.Duration
-	port      serial.Port
+	EndMark       byte
+	HWHandshaking bool
+	DelayTime     time.Duration
+	port          serial.Port
 }
 
 // NewDevice opens a serial Device using the given VISA address resource string.
@@ -45,9 +46,10 @@ func NewDevice(address string) (*Device, error) {
 	}
 
 	return &Device{
-		port:      port,
-		EndMark:   '\n',
-		DelayTime: 70 * time.Millisecond,
+		port:          port,
+		HWHandshaking: false,
+		EndMark:       '\n',
+		DelayTime:     70 * time.Millisecond,
 	}, nil
 }
 
@@ -74,7 +76,9 @@ func (d *Device) WriteString(s string) (n int, err error) {
 // Command sends the SCPI/ASCII command to the underlying network connection. A
 // newline character is automatically added to the end of the string.
 func (d *Device) Command(format string, a ...any) error {
-	d.napIfDataSetNotReady()
+	if d.HWHandshaking {
+		d.napIfDataSetNotReady()
+	}
 	cmd := format
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)

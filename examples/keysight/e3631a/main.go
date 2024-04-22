@@ -57,6 +57,8 @@ func main() {
 	}
 	defer dev.Close()
 
+	dev.HWHandshaking = true
+
 	// Query the identification of the function generator.
 	idn, err := dev.Query("*IDN?\r\n")
 	if err != nil && err != io.EOF {
