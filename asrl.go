@@ -96,14 +96,11 @@ func (d *Device) Command(format string, a ...any) error {
 // returns a string. A newline character is automatically added to the query
 // command sent to the instrument.
 func (d *Device) Query(cmd string) (string, error) {
-	log.Printf("starting query for %s", cmd)
 	err := d.Command(cmd)
-	log.Printf("command sent to query for %s", cmd)
 	if err != nil {
 		log.Printf("error received from command sent to query for %s", cmd)
 		return "", err
 	}
-	log.Printf("Just before reading bufio string for query for %s", cmd)
 	return bufio.NewReader(d.port).ReadString('\n')
 }
 
