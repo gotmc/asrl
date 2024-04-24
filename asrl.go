@@ -65,6 +65,7 @@ func (d *Device) Read(p []byte) (n int, err error) {
 
 // Close closes the underlying network connection.
 func (d *Device) Close() error {
+	time.Sleep(d.DelayTime)
 	return d.port.Close()
 }
 
@@ -88,6 +89,7 @@ func (d *Device) Command(format string, a ...any) error {
 	if err != nil {
 		return err
 	}
+	time.Sleep(d.DelayTime)
 
 	return err
 }
@@ -137,7 +139,7 @@ func (d *Device) napIfDataSetNotReady() {
 	// the power supply to hang sometimes. I'm currently using 70 ms to be safe.
 	//------------------------------------------------------------------------//
 	for !isDSR(d.port) {
-		log.Printf("DSR is false, so napping for %s", d.DelayTime)
+		// log.Printf("DSR is false, so napping for %s", d.DelayTime)
 		time.Sleep(d.DelayTime)
 	}
 	//------------------------------------------------------------------------//

@@ -93,5 +93,10 @@ func main() {
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
-	log.Printf("output state = %s", state)
+	log.Printf("output state = %v", state)
+
+	// Set instrument to local mode.
+	if err := dev.Command("SYST:LOC"); err != nil {
+		log.Printf("Error while setting to local: %v", err)
+	}
 }
