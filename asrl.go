@@ -86,7 +86,7 @@ func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 		}
 	}
 	cmd := format
-	if a != nil {
+	if len(a) > 0 {
 		cmd = fmt.Sprintf(format, a...)
 	}
 	cmd = strings.TrimSpace(cmd) + string(d.EndMark)
