@@ -13,6 +13,14 @@ import (
 	"go.bug.st/serial"
 )
 
+var visaResourceRE = regexp.MustCompile(
+	`^(?P<interfaceType>ASRL)(?P<boardIndex>\d*)::` +
+		`(?P<address>[^\s]+)::` +
+		`(?P<baud>\d+)::` +
+		`(?P<dataflow>\d{1}\w{1}\d{1})::` +
+		`(?P<resourceClass>INSTR)$`,
+)
+
 // VisaResource represents a VISA enabled piece of test equipment.
 type VisaResource struct {
 	resourceString string
@@ -28,42 +36,33 @@ type VisaResource struct {
 // NewVisaResource creates a new VisaResource using the given VISA
 // resourceString. If the dataflow isn't provided as part of the VISA resource
 // string, the dataflow will default to 8N1.
-func NewVisaResource(resourceString string) (visa *VisaResource, err error) {
-	visa = &VisaResource{
-		resourceString: resourceString,
-	}
-	regString := `^(?P<interfaceType>ASRL)(?P<boardIndex>\d*)::` +
-		`(?P<address>[^\s]+)::` +
-		`(?P<baud>\d+)::` +
-		`(?P<dataflow>\d{1}\w{1}\d{1})::` +
-		`(?P<resourceClass>INSTR)$`
-
-	re := regexp.MustCompile(regString)
-	res := re.FindStringSubmatch(resourceString)
-	subexpNames := re.SubexpNames()
+func NewVisaResource(resourceString string) (*VisaResource, error) {
+	res := visaResourceRE.FindStringSubmatch(resourceString)
+	subexpNames := visaResourceRE.SubexpNames()
 	matchMap := map[string]string{}
 	for i, n := range res {
-		matchMap[subexpNames[i]] = string(n)
+		matchMap[subexpNames[i]] = n
 	}
 
 	if matchMap["interfaceType"] != "ASRL" {
-		return visa, errors.New("visa: interface type was not ASRL")
+		return nil, errors.New("visa: interface type was not ASRL")
 	}
-	visa.interfaceType = "ASRL"
 
 	if matchMap["resourceClass"] != "INSTR" {
-		return visa, errors.New("visa: resource class was not INSTR")
+		return nil, errors.New("visa: resource class was not INSTR")
 	}
-	visa.resourceClass = "INSTR"
 
-	if matchMap["address"] != "" {
-		visa.address = matchMap["address"]
+	visa := &VisaResource{
+		resourceString: resourceString,
+		interfaceType:  "ASRL",
+		resourceClass:  "INSTR",
+		address:        matchMap["address"],
 	}
 
 	if matchMap["baud"] != "" {
 		baud, err := strconv.Atoi(matchMap["baud"])
 		if err != nil {
-			return visa, errors.New("visa: baud error")
+			return nil, errors.New("visa: baud error")
 		}
 		visa.baud = baud
 	}
@@ -91,7 +90,7 @@ func NewVisaResource(resourceString string) (visa *VisaResource, err error) {
 			visa.parity = serial.OddParity
 			visa.stopBits = serial.OneStopBit
 		default:
-			return visa, errors.New("visa: dataflow error")
+			return nil, errors.New("visa: dataflow error")
 		}
 	} else {
 		visa.dataBits = 8

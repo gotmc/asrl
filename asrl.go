@@ -13,7 +13,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -34,10 +33,6 @@ func NewDevice(address string) (*Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Baud rate = %d", v.baud)
-	log.Printf("Parity = %v", v.parity)
-	log.Printf("Data bits = %d", v.dataBits)
-	log.Printf("Stop bits = %v", v.stopBits)
 
 	mode := &serial.Mode{
 		BaudRate: v.baud,
@@ -86,74 +81,61 @@ func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 		return err
 	}
 	if d.HWHandshaking {
-		d.napIfDataSetNotReady()
+		if err := d.napIfDataSetNotReady(ctx); err != nil {
+			return err
+		}
 	}
 	cmd := format
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
 	cmd = strings.TrimSpace(cmd) + string(d.EndMark)
-	_, err := d.WriteString(cmd)
-	if err != nil {
+	if _, err := d.WriteString(cmd); err != nil {
 		return err
 	}
 	time.Sleep(d.DelayTime)
 
-	return err
+	return nil
 }
 
 // Query writes the given string to the underlying network connection and
 // returns a string. A newline character is automatically added to the query
 // command sent to the instrument.
 func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
-	err := d.Command(ctx, cmd)
-	if err != nil {
-		log.Printf("error received from command sent to query for %s", cmd)
+	if err := d.Command(ctx, cmd); err != nil {
 		return "", err
 	}
 	return bufio.NewReader(d.port).ReadString('\n')
 }
 
-func isDSR(port serial.Port) bool {
+func isDSR(port serial.Port) (bool, error) {
 	msb, err := port.GetModemStatusBits()
 	if err != nil {
-		log.Printf("error getting modem status bits: %s", err)
+		return false, fmt.Errorf("getting modem status bits: %w", err)
 	}
-	return msb.DSR
+	return msb.DSR, nil
 }
 
-func (d *Device) napIfDataSetNotReady() {
-	//------------------------------------------------------------------------//
-	//
-	//                       ___====-_  _-====___
-	//                 _--^^^#####//      \\#####^^^--_
-	//              _-^##########// (    ) \\##########^-_
-	//             -############//  |\^^/|  \\############-
-	//           _/############//   (@::@)   \\############\_
-	//          /#############((     \\//     ))#############\
-	//         -###############\\    (oo)    //###############-
-	//        -#################\\  / VV \  //#################-
-	//       -###################\\/      \//###################-
-	//      _#/|##########/\######(   /\   )######/\##########|\#_
-	//      |/ |#/\#/\#/\/  \#/\##\  |  |  /##/\#/  \/\#/\#/\#| \|
-	//      `  |/  V  V  `   V  \#\| |  | |/#/  V   '  V  V  \|  '
-	//         `   `  `      `   / | |  | | \   '      '  '   '
-	//                          (  | |  | |  )
-	//                         __\ | |  | | /__
-	//                        (vvv(VVV)(VVV)vvv)
-	//------------------------------------------------------------------------//
+func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 	// If I use 40 ms instead of 50 ms for the delay time, the Keysight E3631A DC
 	// power supply will hang when sending commands/queries. Using 50 ms causes
 	// the power supply to hang sometimes. I'm currently using 70 ms to be safe.
-	//------------------------------------------------------------------------//
-	for !isDSR(d.port) {
-		// log.Printf("DSR is false, so napping for %s", d.DelayTime)
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		ready, err := isDSR(d.port)
+		if err != nil {
+			return err
+		}
+		if ready {
+			break
+		}
 		time.Sleep(d.DelayTime)
 	}
-	//------------------------------------------------------------------------//
 	// Sleep a bit longer once the Data Set Ready is true. Without this, the
 	// Keysight E3631A DC power supply will sometimes hang when sending
 	// commands/queries.
 	time.Sleep(d.DelayTime)
-	//------------------------------------------------------------------------//
+	return nil
 }

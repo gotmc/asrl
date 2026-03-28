@@ -6,14 +6,16 @@
 package asrl
 
 import (
-	"errors"
 	"testing"
 
 	"go.bug.st/serial"
 )
 
 func TestParsingVisaResourceString(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
+		name           string
 		resourceString string
 		interfaceType  string
 		address        string
@@ -22,110 +24,102 @@ func TestParsingVisaResourceString(t *testing.T) {
 		parity         serial.Parity
 		stopBits       serial.StopBits
 		resourceClass  string
-		isError        bool
-		errorString    error
+		wantErr        string
 	}{
 		{
-			"ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR",
-			"ASRL", "/dev/tty.usbserial-PX484GRU",
-			9600, 8, serial.NoParity, serial.TwoStopBits,
-			"INSTR", false, errors.New(""),
+			name:           "9600 baud 8N2",
+			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR",
+			interfaceType:  "ASRL",
+			address:        "/dev/tty.usbserial-PX484GRU",
+			baud:           9600,
+			dataBits:       8,
+			parity:         serial.NoParity,
+			stopBits:       serial.TwoStopBits,
+			resourceClass:  "INSTR",
 		},
 		{
-			"ASRL::/dev/tty.usbserial-PX484GRU::115200::8N1::INSTR",
-			"ASRL", "/dev/tty.usbserial-PX484GRU",
-			115200, 8, serial.NoParity, serial.OneStopBit,
-			"INSTR", false, errors.New(""),
+			name:           "115200 baud 8N1",
+			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::115200::8N1::INSTR",
+			interfaceType:  "ASRL",
+			address:        "/dev/tty.usbserial-PX484GRU",
+			baud:           115200,
+			dataBits:       8,
+			parity:         serial.NoParity,
+			stopBits:       serial.OneStopBit,
+			resourceClass:  "INSTR",
 		},
 		{
-			"ASRL::/dev/tty.usbserial-PX484GRU::115200::7E2::INSTR",
-			"ASRL", "/dev/tty.usbserial-PX484GRU",
-			115200, 7, serial.EvenParity, serial.TwoStopBits,
-			"INSTR", false, errors.New(""),
+			name:           "115200 baud 7E2",
+			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::115200::7E2::INSTR",
+			interfaceType:  "ASRL",
+			address:        "/dev/tty.usbserial-PX484GRU",
+			baud:           115200,
+			dataBits:       7,
+			parity:         serial.EvenParity,
+			stopBits:       serial.TwoStopBits,
+			resourceClass:  "INSTR",
 		},
 		{
-			"ASRL::/dev/tty.usbserial-PX484GRU::115200::7E1::INSTR",
-			"ASRL", "/dev/tty.usbserial-PX484GRU",
-			115200, 7, serial.EvenParity, serial.OneStopBit,
-			"INSTR", false, errors.New(""),
+			name:           "115200 baud 7E1",
+			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::115200::7E1::INSTR",
+			interfaceType:  "ASRL",
+			address:        "/dev/tty.usbserial-PX484GRU",
+			baud:           115200,
+			dataBits:       7,
+			parity:         serial.EvenParity,
+			stopBits:       serial.OneStopBit,
+			resourceClass:  "INSTR",
 		},
 		{
-			"ASRL::/dev/tty.usbserial-PX484GRU::115200::7O1::INSTR",
-			"ASRL", "/dev/tty.usbserial-PX484GRU",
-			115200, 7, serial.OddParity, serial.OneStopBit,
-			"INSTR", false, errors.New(""),
+			name:           "115200 baud 7O1",
+			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::115200::7O1::INSTR",
+			interfaceType:  "ASRL",
+			address:        "/dev/tty.usbserial-PX484GRU",
+			baud:           115200,
+			dataBits:       7,
+			parity:         serial.OddParity,
+			stopBits:       serial.OneStopBit,
+			resourceClass:  "INSTR",
 		},
 	}
-	for _, testCase := range testCases {
-		resource, err := NewVisaResource(testCase.resourceString)
-		if resource.interfaceType != testCase.interfaceType {
-			t.Errorf(
-				"interfaceType == %s, want %s for resource %s",
-				resource.interfaceType,
-				testCase.interfaceType,
-				testCase.resourceString,
-			)
-		}
-		if resource.address != testCase.address {
-			t.Errorf(
-				"address == %s, want %s for resource %s",
-				resource.address,
-				testCase.address,
-				testCase.resourceString,
-			)
-		}
-		if resource.baud != testCase.baud {
-			t.Errorf(
-				"baud == %d, want %d for resource %s",
-				resource.baud,
-				testCase.baud,
-				testCase.resourceString,
-			)
-		}
-		if resource.dataBits != testCase.dataBits {
-			t.Errorf(
-				"dataBits == %d, want %d for resource %s",
-				resource.dataBits,
-				testCase.dataBits,
-				testCase.resourceString,
-			)
-		}
-		if resource.parity != testCase.parity {
-			t.Errorf(
-				"parity == %d, want %d for resource %s",
-				resource.parity,
-				testCase.parity,
-				testCase.resourceString,
-			)
-		}
-		if resource.stopBits != testCase.stopBits {
-			t.Errorf(
-				"stopBits == %d, want %d for resource %s",
-				resource.stopBits,
-				testCase.stopBits,
-				testCase.resourceString,
-			)
-		}
-		if resource.resourceClass != testCase.resourceClass {
-			t.Errorf(
-				"resourceClass == %s, want %s for resource %s",
-				resource.resourceClass,
-				testCase.resourceClass,
-				testCase.resourceString,
-			)
-		}
-		if err != nil && testCase.isError {
-			if err.Error() != testCase.errorString.Error() {
-				t.Errorf(
-					"err == %s, want %s for resource %s",
-					err,
-					testCase.errorString,
-					testCase.resourceString,
-				)
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			resource, err := NewVisaResource(tc.resourceString)
+			if tc.wantErr != "" {
+				if err == nil {
+					t.Fatalf("expected error %q, got nil", tc.wantErr)
+				}
+				if err.Error() != tc.wantErr {
+					t.Fatalf("err = %q, want %q", err, tc.wantErr)
+				}
+				return
 			}
-		}
-		if err != nil && !testCase.isError {
-			t.Errorf("Unhandled error: %q for resource %s", err, testCase.resourceString)
-		}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if resource.interfaceType != tc.interfaceType {
+				t.Errorf("interfaceType = %s, want %s", resource.interfaceType, tc.interfaceType)
+			}
+			if resource.address != tc.address {
+				t.Errorf("address = %s, want %s", resource.address, tc.address)
+			}
+			if resource.baud != tc.baud {
+				t.Errorf("baud = %d, want %d", resource.baud, tc.baud)
+			}
+			if resource.dataBits != tc.dataBits {
+				t.Errorf("dataBits = %d, want %d", resource.dataBits, tc.dataBits)
+			}
+			if resource.parity != tc.parity {
+				t.Errorf("parity = %d, want %d", resource.parity, tc.parity)
+			}
+			if resource.stopBits != tc.stopBits {
+				t.Errorf("stopBits = %d, want %d", resource.stopBits, tc.stopBits)
+			}
+			if resource.resourceClass != tc.resourceClass {
+				t.Errorf("resourceClass = %s, want %s", resource.resourceClass, tc.resourceClass)
+			}
+		})
 	}
 }
