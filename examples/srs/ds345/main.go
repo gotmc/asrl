@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -50,8 +51,10 @@ func main() {
 		}
 	}()
 
+	ctx := context.Background()
+
 	// Query the identification of the function generator.
-	idn, err := dev.Query("*idn?")
+	idn, err := dev.Query(ctx, "*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
@@ -74,7 +77,7 @@ func main() {
 	}
 	for _, cmd := range cmds {
 		log.Printf("Sending command: %s", cmd)
-		err = dev.Command(cmd)
+		err = dev.Command(ctx, cmd)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -13,6 +13,7 @@ with FTDI - Null Modem - USB 1.1 / 2.0 - Bus-Powered][cable] model ICUSB232FTN.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -62,9 +63,10 @@ func main() {
 	}()
 
 	dev.HWHandshaking = true
+	ctx := context.Background()
 
 	// Query the identification of the function generator.
-	idn, err := dev.Query("*IDN?\r\n")
+	idn, err := dev.Query(ctx, "*IDN?\r\n")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
@@ -79,28 +81,28 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		if err = dev.Command(cmd); err != nil {
+		if err = dev.Command(ctx, cmd); err != nil {
 			log.Printf("Received error: %s", err)
 			log.Fatal(err)
 		}
 	}
 
 	// Query the voltage output
-	vc, err := dev.Query("appl? p6v")
+	vc, err := dev.Query(ctx, "appl? p6v")
 	if err != nil {
 		log.Fatalf("error querying serial port: %s", err)
 	}
 	log.Printf("voltage, current = %s", vc)
 
 	// Query the output state
-	state, err := dev.Query("OUTP:STAT?")
+	state, err := dev.Query(ctx, "OUTP:STAT?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
 	log.Printf("output state = %v", state)
 
 	// Set instrument to local mode.
-	if err := dev.Command("SYST:LOC"); err != nil {
+	if err := dev.Command(ctx, "SYST:LOC"); err != nil {
 		log.Printf("Error while setting to local: %v", err)
 	}
 }

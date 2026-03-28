@@ -11,6 +11,7 @@ package asrl
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -80,7 +81,10 @@ func (d *Device) WriteString(s string) (n int, err error) {
 
 // Command sends the SCPI/ASCII command to the underlying network connection. A
 // newline character is automatically added to the end of the string.
-func (d *Device) Command(format string, a ...any) error {
+func (d *Device) Command(ctx context.Context, format string, a ...any) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if d.HWHandshaking {
 		d.napIfDataSetNotReady()
 	}
@@ -101,8 +105,8 @@ func (d *Device) Command(format string, a ...any) error {
 // Query writes the given string to the underlying network connection and
 // returns a string. A newline character is automatically added to the query
 // command sent to the instrument.
-func (d *Device) Query(cmd string) (string, error) {
-	err := d.Command(cmd)
+func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
+	err := d.Command(ctx, cmd)
 	if err != nil {
 		log.Printf("error received from command sent to query for %s", cmd)
 		return "", err
