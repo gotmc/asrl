@@ -1,8 +1,12 @@
-// Copyright (c) 2017-2024 The asrl developers. All rights reserved.
+// Copyright (c) 2017-2026 The asrl developers. All rights reserved.
 // Project site: https://github.com/gotmc/asrl
 // Use of this source code is governed by a MIT-style license that
 // can be found in the LICENSE.txt file for the project.
 
+// Package asrl provides an Asynchronous Serial (ASRL) interface for
+// controlling test equipment over serial ports using SCPI commands. It
+// implements the VISA ASRL resource string format and serves as an instrument
+// driver for the ivi and visa packages.
 package asrl
 
 import (
