@@ -25,6 +25,7 @@ type Device struct {
 	HWHandshaking bool
 	DelayTime     time.Duration
 	port          serial.Port
+	reader        *bufio.Reader
 }
 
 // NewDevice opens a serial Device using the given VISA address resource string.
@@ -47,6 +48,7 @@ func NewDevice(address string) (*Device, error) {
 
 	return &Device{
 		port:          port,
+		reader:        bufio.NewReader(port),
 		HWHandshaking: false,
 		EndMark:       '\n',
 		DelayTime:     70 * time.Millisecond,
@@ -113,7 +115,7 @@ func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 	}
 	ch := make(chan result, 1)
 	go func() {
-		s, err := bufio.NewReader(d.port).ReadString(d.EndMark)
+		s, err := d.reader.ReadString(d.EndMark)
 		ch <- result{s, err}
 	}()
 
