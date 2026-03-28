@@ -98,14 +98,31 @@ func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 	return nil
 }
 
-// Query writes the given string to the underlying network connection and
-// returns a string. A newline character is automatically added to the query
-// command sent to the instrument.
+// Query writes the given string to the serial port and returns the response
+// string. A newline character is automatically added to the query command sent
+// to the instrument. The context is used for cancellation; if the context is
+// cancelled while waiting for a response, Query returns the context error.
 func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 	if err := d.Command(ctx, cmd); err != nil {
 		return "", err
 	}
-	return bufio.NewReader(d.port).ReadString(d.EndMark)
+
+	type result struct {
+		s   string
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		s, err := bufio.NewReader(d.port).ReadString(d.EndMark)
+		ch <- result{s, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case r := <-ch:
+		return r.s, r.err
+	}
 }
 
 func isDSR(port serial.Port) (bool, error) {
