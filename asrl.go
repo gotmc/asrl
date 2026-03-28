@@ -128,6 +128,13 @@ func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 
 	select {
 	case <-ctx.Done():
+		// Set a short read timeout to unblock the goroutine stuck on
+		// ReadString, then wait for it to finish so we don't leak it or
+		// race on the bufio.Reader.
+		_ = d.port.SetReadTimeout(1 * time.Millisecond)
+		<-ch
+		_ = d.port.SetReadTimeout(d.ReadTimeout)
+		d.reader.Reset(d.port)
 		return "", ctx.Err()
 	case r := <-ch:
 		return r.s, r.err
