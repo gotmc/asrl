@@ -10,11 +10,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 just check          # Format (go fmt) and vet (go vet)
-just unit           # Run unit tests with race detection (-short flag)
+just unit           # Run unit tests with race detection (-short flag); runs check first
 just lint           # Lint with golangci-lint (uses .golangci.yaml config)
 just cover          # Generate and open HTML coverage report
-just tidy           # go mod tidy
-just update         # Update dependencies
+just tidy           # go mod tidy and verify
+just updateall      # Update all dependencies
 ```
 
 Run a single test:
@@ -38,6 +38,8 @@ just ds345 /dev/tty.usbserial-XXXX
 
 - **Entry point:** `NewDevice(address string)` parses a VISA resource string via `NewVisaResource()`, then opens the serial port with the parsed settings (baud, data bits, parity, stop bits).
 - `Command()` and `Query()` accept `context.Context` for cancellation support. `Command()` auto-appends a newline; `Query()` sends a command then reads the response.
-- Hardware handshaking (`HWHandshaking`) is disabled by default. When enabled, `Command()` polls DSR before writing.
+- `Query()` spawns a goroutine for the blocking `ReadString` call. On context cancellation, it sets a short read timeout to unblock the goroutine, waits for it to finish, then resets the reader — this prevents goroutine leaks and races on the `bufio.Reader`.
+- Hardware handshaking (`HWHandshaking`) is disabled by default. When enabled, `Command()` polls DSR before writing with a timeout based on `ReadTimeout`.
 - `DelayTime` (default 70ms) is critical for reliable communication — values below ~50ms can cause hangs with certain instruments (e.g., Keysight E3631A).
+- `ReadTimeout` (default 5s) is set on the serial port and also used as the DSR polling deadline.
 - Only dependency: `go.bug.st/serial` for serial port access.

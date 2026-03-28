@@ -17,27 +17,33 @@ Instrument interface for both the [ivi][] and [visa][] packages. The [ivi][]
 package provides standardized APIs for programming test instruments following
 the [Interchangeable Virtual Instrument (IVI) standard][ivi-specs].
 
-## Implementations
+## Usage
 
-### Prologix
+```go
+dev, err := asrl.NewDevice("ASRL::/dev/tty.usbserial-PX8X3YR6::9600::8N2::INSTR")
+if err != nil {
+    log.Fatal(err)
+}
+defer dev.Close()
 
-The `prologix` package provides a serial interface for the Prologix GPIB-USB
-Controller using the Virtual COM Port (VCP) driver. To work, you must download
-the drivers for FT245R chip from FTDI website (www.ftdichip.com).
+ctx := context.Background()
 
-## Installation
+// Query the instrument identification.
+idn, err := dev.Query(ctx, "*IDN?")
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(idn)
 
-```bash
-$ go get github.com/gotmc/asrl
+// Send a SCPI command.
+if err := dev.Command(ctx, "OUTP ON"); err != nil {
+    log.Fatal(err)
+}
 ```
 
 ## Documentation
 
-Documentation can be found at either:
-
-- <https://godoc.org/github.com/gotmc/asrl>
-- <http://localhost:6060/pkg/github.com/gotmc/asrl/> after running `$
-godoc -http=:6060`
+Documentation can be found at <https://pkg.go.dev/github.com/gotmc/asrl>.
 
 ## Contributing
 
@@ -50,28 +56,14 @@ Contributions are welcome! To contribute please:
 
 ### Testing
 
-Prior to submitting a [pull request][], please run the tests using either [GNU
-Make][make]:
-
-```bash
-$ make check
-$ make lint
-```
-
-or you can use [Just][]:
+Prior to submitting a [pull request][], please run:
 
 ```bash
 $ just check
 $ just lint
 ```
 
-To update and view the test coverage report using [Make][] run:
-
-```bash
-$ make cover
-```
-
-or you can use [Just][]:
+To update and view the test coverage report:
 
 ```bash
 $ just cover
@@ -83,15 +75,12 @@ $ just cover
 for more information.
 
 [asrl]: https://github.com/gotmc/asrl
-[godoc badge]: https://godoc.org/github.com/gotmc/asrl?status.svg
-[godoc link]: https://godoc.org/github.com/gotmc/asrl
+[godoc badge]: https://pkg.go.dev/badge/github.com/gotmc/asrl
+[godoc link]: https://pkg.go.dev/github.com/gotmc/asrl
 [ivi]: https://github.com/gotmc/ivi
-[ivi-foundation]: http://www.ivifoundation.org/
 [ivi-specs]: http://www.ivifoundation.org/specifications/
-[just]: https://just.systems/man/en/
-[LICENSE.txt]: https://github.com/gotmc/lxi/blob/master/LICENSE.txt
+[LICENSE.txt]: https://github.com/gotmc/asrl/blob/master/LICENSE.txt
 [license badge]: https://img.shields.io/badge/license-MIT-blue.svg
-[make]: https://www.gnu.org/software/make/
 [pull request]: https://help.github.com/articles/using-pull-requests
 [report badge]: https://goreportcard.com/badge/github.com/gotmc/asrl
 [report card]: https://goreportcard.com/report/github.com/gotmc/asrl
