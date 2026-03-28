@@ -38,6 +38,9 @@ type VisaResource struct {
 // string, the dataflow will default to 8N1.
 func NewVisaResource(resourceString string) (*VisaResource, error) {
 	res := visaResourceRE.FindStringSubmatch(resourceString)
+	if res == nil {
+		return nil, errors.New("visa: invalid VISA resource string")
+	}
 	subexpNames := visaResourceRE.SubexpNames()
 	matchMap := map[string]string{}
 	for i, n := range res {
