@@ -24,6 +24,7 @@ type Device struct {
 	EndMark       byte
 	HWHandshaking bool
 	DelayTime     time.Duration
+	ReadTimeout   time.Duration
 	port          serial.Port
 	reader        *bufio.Reader
 }
@@ -46,13 +47,19 @@ func NewDevice(address string) (*Device, error) {
 		return nil, err
 	}
 
-	return &Device{
+	d := &Device{
 		port:          port,
 		reader:        bufio.NewReader(port),
 		HWHandshaking: false,
 		EndMark:       '\n',
 		DelayTime:     70 * time.Millisecond,
-	}, nil
+		ReadTimeout:   5 * time.Second,
+	}
+	if err := port.SetReadTimeout(d.ReadTimeout); err != nil {
+		port.Close()
+		return nil, fmt.Errorf("setting read timeout: %w", err)
+	}
+	return d, nil
 }
 
 // Write writes the given data to the serial port.
