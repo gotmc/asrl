@@ -81,7 +81,7 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		if err = dev.Command(ctx, cmd); err != nil {
+		if err = dev.Command(ctx, "%s", cmd); err != nil {
 			log.Printf("Received error: %s", err)
 			log.Fatal(err)
 		}

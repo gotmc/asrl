@@ -103,7 +103,7 @@ func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 // to the instrument. The context is used for cancellation; if the context is
 // cancelled while waiting for a response, Query returns the context error.
 func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
-	if err := d.Command(ctx, cmd); err != nil {
+	if err := d.Command(ctx, "%s", cmd); err != nil {
 		return "", err
 	}
 

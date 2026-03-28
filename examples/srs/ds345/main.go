@@ -77,7 +77,7 @@ func main() {
 	}
 	for _, cmd := range cmds {
 		log.Printf("Sending command: %s", cmd)
-		err = dev.Command(ctx, cmd)
+		err = dev.Command(ctx, "%s", cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
