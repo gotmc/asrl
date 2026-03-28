@@ -81,6 +81,26 @@ func TestParsingVisaResourceString(t *testing.T) {
 			stopBits:       serial.OneStopBit,
 			resourceClass:  "INSTR",
 		},
+		{
+			name:           "completely invalid string",
+			resourceString: "not-a-visa-string",
+			wantErr:        "visa: invalid VISA resource string",
+		},
+		{
+			name:           "unsupported dataflow",
+			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::9600::9N1::INSTR",
+			wantErr:        "visa: dataflow error",
+		},
+		{
+			name:           "empty string",
+			resourceString: "",
+			wantErr:        "visa: invalid VISA resource string",
+		},
+		{
+			name:           "missing INSTR resource class",
+			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::9600::8N1::OTHER",
+			wantErr:        "visa: invalid VISA resource string",
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
