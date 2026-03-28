@@ -53,29 +53,29 @@ func NewDevice(address string) (*Device, error) {
 	}, nil
 }
 
-// Write writes the given data to the network connection.
+// Write writes the given data to the serial port.
 func (d *Device) Write(p []byte) (n int, err error) {
 	return d.port.Write(p)
 }
 
-// Read reads from the network connection into the given byte slice.
+// Read reads from the serial port into the given byte slice.
 func (d *Device) Read(p []byte) (n int, err error) {
 	return d.port.Read(p)
 }
 
-// Close closes the underlying network connection.
+// Close closes the underlying serial port.
 func (d *Device) Close() error {
 	time.Sleep(d.DelayTime)
 	return d.port.Close()
 }
 
-// WriteString writes a string using the underlying network connection.
+// WriteString writes a string to the serial port.
 func (d *Device) WriteString(s string) (n int, err error) {
 	return d.Write([]byte(s))
 }
 
-// Command sends the SCPI/ASCII command to the underlying network connection. A
-// newline character is automatically added to the end of the string.
+// Command sends the SCPI/ASCII command to the serial port. A newline character
+// is automatically added to the end of the string.
 func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 	if err := ctx.Err(); err != nil {
 		return err
