@@ -44,7 +44,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dev.Close()
+	defer func() {
+		if err := dev.Close(); err != nil {
+			log.Printf("error closing device: %v", err)
+		}
+	}()
 
 	// Query the identification of the function generator.
 	idn, err := dev.Query("*idn?")

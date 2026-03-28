@@ -55,7 +55,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dev.Close()
+	defer func() {
+		if err := dev.Close(); err != nil {
+			log.Printf("error closing device: %v", err)
+		}
+	}()
 
 	dev.HWHandshaking = true
 

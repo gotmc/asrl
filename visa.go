@@ -61,11 +61,11 @@ func NewVisaResource(resourceString string) (visa *VisaResource, err error) {
 	}
 
 	if matchMap["baud"] != "" {
-		baud, err := strconv.ParseUint(matchMap["baud"], 10, 64)
+		baud, err := strconv.Atoi(matchMap["baud"])
 		if err != nil {
 			return visa, errors.New("visa: baud error")
 		}
-		visa.baud = int(baud)
+		visa.baud = baud
 	}
 
 	if matchMap["dataflow"] != "" {
