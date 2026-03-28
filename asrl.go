@@ -105,7 +105,7 @@ func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 	if err := d.Command(ctx, cmd); err != nil {
 		return "", err
 	}
-	return bufio.NewReader(d.port).ReadString('\n')
+	return bufio.NewReader(d.port).ReadString(d.EndMark)
 }
 
 func isDSR(port serial.Port) (bool, error) {
