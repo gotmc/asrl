@@ -153,9 +153,13 @@ func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 	// If I use 40 ms instead of 50 ms for the delay time, the Keysight E3631A DC
 	// power supply will hang when sending commands/queries. Using 50 ms causes
 	// the power supply to hang sometimes. I'm currently using 70 ms to be safe.
+	deadline := time.Now().Add(d.ReadTimeout)
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("asrl: DSR not ready after %s", d.ReadTimeout)
 		}
 		ready, err := isDSR(d.port)
 		if err != nil {
