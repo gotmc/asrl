@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"flag"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -55,7 +56,7 @@ func main() {
 
 	// Query the identification of the function generator.
 	idn, err := dev.Query(ctx, "*idn?")
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		log.Fatalf("error querying serial port: %s", err)
 	}
 	log.Printf("query idn = %s", idn)
