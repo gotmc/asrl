@@ -103,3 +103,43 @@ func NewVisaResource(resourceString string) (*VisaResource, error) {
 
 	return visa, nil
 }
+
+// String returns the original VISA resource string.
+func (v *VisaResource) String() string {
+	return v.resourceString
+}
+
+// InterfaceType returns the VISA interface type (e.g., "ASRL").
+func (v *VisaResource) InterfaceType() string {
+	return v.interfaceType
+}
+
+// Address returns the serial port address.
+func (v *VisaResource) Address() string {
+	return v.address
+}
+
+// Baud returns the baud rate.
+func (v *VisaResource) Baud() int {
+	return v.baud
+}
+
+// DataBits returns the number of data bits.
+func (v *VisaResource) DataBits() int {
+	return v.dataBits
+}
+
+// Parity returns the parity setting.
+func (v *VisaResource) Parity() serial.Parity {
+	return v.parity
+}
+
+// StopBits returns the stop bits setting.
+func (v *VisaResource) StopBits() serial.StopBits {
+	return v.stopBits
+}
+
+// ResourceClass returns the VISA resource class (e.g., "INSTR").
+func (v *VisaResource) ResourceClass() string {
+	return v.resourceClass
+}
