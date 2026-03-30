@@ -78,13 +78,15 @@ func (d *Device) Close() error {
 	return d.port.Close()
 }
 
-// WriteString writes a string to the serial port.
+// WriteString writes a string to the serial port. An endmark character, such
+// as a newline, is not automatically added to the end of the string.
 func (d *Device) WriteString(s string) (n int, err error) {
 	return d.Write([]byte(s))
 }
 
-// Command sends the SCPI/ASCII command to the serial port. A newline character
-// is automatically added to the end of the string.
+// Command sends a SCPI/ASCII command to the serial port. An endmark
+// charachter, such as newline, is automatically added to the end of the
+// string.
 func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -107,10 +109,12 @@ func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 	return nil
 }
 
-// Query writes the given string to the serial port and returns the response
-// string. A newline character is automatically added to the query command sent
-// to the instrument. The context is used for cancellation; if the context is
-// cancelled while waiting for a response, Query returns the context error.
+// Query writes the given SCPI/ASCII command to the serial port and returns the
+// response string. The device's endmark character (newline by default) is
+// automatically added to the query command. The string returned is not
+// stripped of any whitespace. The context is used for cancellation; if the
+// context is cancelled while waiting for a response, Query returns the context
+// error.
 func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 	if err := d.Command(ctx, "%s", cmd); err != nil {
 		return "", err
