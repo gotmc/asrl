@@ -54,6 +54,10 @@ Contributions are welcome! To contribute please:
 3. Code
 4. Submit a [pull request][]
 
+### Development Dependencies
+
+- [just][] - task runner that replaces [GNU Make][make]
+
 ### Testing
 
 Prior to submitting a [pull request][], please run:
@@ -79,8 +83,10 @@ for more information.
 [godoc link]: https://pkg.go.dev/github.com/gotmc/asrl
 [ivi]: https://github.com/gotmc/ivi
 [ivi-specs]: http://www.ivifoundation.org/specifications/
+[just]: https://just.systems/
 [LICENSE.txt]: https://github.com/gotmc/asrl/blob/master/LICENSE.txt
 [license badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[make]: https://www.gnu.org/software/make/
 [pull request]: https://help.github.com/articles/using-pull-requests
 [report badge]: https://goreportcard.com/badge/github.com/gotmc/asrl
 [report card]: https://goreportcard.com/report/github.com/gotmc/asrl
