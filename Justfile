@@ -71,7 +71,7 @@ e3631a port:
   env go build -o e3631a
   ./e3631a -port={{port}}
 
-# Run the ASRL Keysight E3631A power supply example application.
+# Run the ASRL SRS DS345 function generator example application.
 [group('examples')]
 ds345 port:
   #!/usr/bin/env bash
