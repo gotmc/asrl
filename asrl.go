@@ -62,14 +62,77 @@ func NewDevice(address string) (*Device, error) {
 	return d, nil
 }
 
+// Read reads from the serial port into the given byte slice.
+func (d *Device) Read(p []byte) (n int, err error) {
+	return d.port.Read(p)
+}
+
 // Write writes the given data to the serial port.
 func (d *Device) Write(p []byte) (n int, err error) {
 	return d.port.Write(p)
 }
 
-// Read reads from the serial port into the given byte slice.
-func (d *Device) Read(p []byte) (n int, err error) {
-	return d.port.Read(p)
+// ReadContext reads from the serial port into the given byte slice with context
+// support. If the context is cancelled before the read completes, ReadContext
+// sets a short timeout to unblock the read, waits for the goroutine to finish,
+// resets the reader, and returns the context error.
+func (d *Device) ReadContext(ctx context.Context, p []byte) (int, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+
+	type result struct {
+		n   int
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		n, err := d.port.Read(p)
+		ch <- result{n, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		// Set a short read timeout to unblock the goroutine stuck on Read,
+		// then wait for it to finish so we don't leak it.
+		_ = d.port.SetReadTimeout(1 * time.Millisecond)
+		<-ch
+		_ = d.port.SetReadTimeout(d.ReadTimeout)
+		return 0, ctx.Err()
+	case r := <-ch:
+		return r.n, r.err
+	}
+}
+
+// WriteContext writes the given data to the serial port with context support.
+// If the context is cancelled before the write completes, WriteContext returns
+// the context error.
+func (d *Device) WriteContext(ctx context.Context, p []byte) (int, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+
+	type result struct {
+		n   int
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		n, err := d.port.Write(p)
+		ch <- result{n, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		// Set a short read timeout to unblock the goroutine, then wait for
+		// it to finish so we don't leak it.
+		_ = d.port.SetReadTimeout(1 * time.Millisecond)
+		<-ch
+		_ = d.port.SetReadTimeout(d.ReadTimeout)
+		return 0, ctx.Err()
+	case r := <-ch:
+		return r.n, r.err
+	}
 }
 
 // Close closes the underlying serial port.
