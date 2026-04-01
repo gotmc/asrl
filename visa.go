@@ -7,6 +7,7 @@ package asrl
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 
@@ -65,7 +66,7 @@ func NewVisaResource(resourceString string) (*VisaResource, error) {
 	if matchMap["baud"] != "" {
 		baud, err := strconv.Atoi(matchMap["baud"])
 		if err != nil {
-			return nil, errors.New("visa: baud error")
+			return nil, fmt.Errorf("visa: invalid baud %q: %w", matchMap["baud"], err)
 		}
 		visa.baud = baud
 	}
@@ -93,7 +94,7 @@ func NewVisaResource(resourceString string) (*VisaResource, error) {
 			visa.parity = serial.OddParity
 			visa.stopBits = serial.OneStopBit
 		default:
-			return nil, errors.New("visa: dataflow error")
+			return nil, fmt.Errorf("visa: unsupported dataflow %q", matchMap["dataflow"])
 		}
 	} else {
 		visa.dataBits = 8

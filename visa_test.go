@@ -89,7 +89,7 @@ func TestParsingVisaResourceString(t *testing.T) {
 		{
 			name:           "unsupported dataflow",
 			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::9600::9N1::INSTR",
-			wantErr:        "visa: dataflow error",
+			wantErr:        `visa: unsupported dataflow "9N1"`,
 		},
 		{
 			name:           "empty string",
