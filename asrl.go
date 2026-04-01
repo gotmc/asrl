@@ -62,6 +62,12 @@ func NewDevice(address string) (*Device, error) {
 	return d, nil
 }
 
+// Close closes the underlying serial port.
+func (d *Device) Close() error {
+	time.Sleep(d.DelayTime)
+	return d.port.Close()
+}
+
 // Read reads from the serial port into the given byte slice.
 func (d *Device) Read(p []byte) (n int, err error) {
 	return d.port.Read(p)
@@ -72,8 +78,14 @@ func (d *Device) Write(p []byte) (n int, err error) {
 	return d.port.Write(p)
 }
 
+// WriteString writes a string to the serial port. An endmark character, such
+// as a newline, is not automatically added to the end of the string.
+func (d *Device) WriteString(s string) (n int, err error) {
+	return d.Write([]byte(s))
+}
+
 // ReadContext reads from the serial port into the given byte slice with context
-// support. If the context is cancelled before the read completes, ReadContext
+// support. If the context is canceled before the read completes, ReadContext
 // sets a short timeout to unblock the read, waits for the goroutine to finish,
 // resets the reader, and returns the context error.
 func (d *Device) ReadContext(ctx context.Context, p []byte) (int, error) {
@@ -105,7 +117,7 @@ func (d *Device) ReadContext(ctx context.Context, p []byte) (int, error) {
 }
 
 // WriteContext writes the given data to the serial port with context support.
-// If the context is cancelled before the write completes, WriteContext returns
+// If the context is canceled before the write completes, WriteContext returns
 // the context error.
 func (d *Device) WriteContext(ctx context.Context, p []byte) (int, error) {
 	if err := ctx.Err(); err != nil {
@@ -135,22 +147,10 @@ func (d *Device) WriteContext(ctx context.Context, p []byte) (int, error) {
 	}
 }
 
-// Close closes the underlying serial port.
-func (d *Device) Close() error {
-	time.Sleep(d.DelayTime)
-	return d.port.Close()
-}
-
-// WriteString writes a string to the serial port. An endmark character, such
-// as a newline, is not automatically added to the end of the string.
-func (d *Device) WriteString(s string) (n int, err error) {
-	return d.Write([]byte(s))
-}
-
-// Command sends a SCPI/ASCII command to the serial port. An endmark
-// charachter, such as newline, is automatically added to the end of the
-// string.
-func (d *Device) Command(ctx context.Context, format string, a ...any) error {
+// Command sends a SCPI/ASCII command to the serial port. The command can be
+// optionally formatted according to a format specifier. An endmark character,
+// such as newline, is automatically added to the end of the string.
+func (d *Device) Command(ctx context.Context, cmd string, a ...any) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -159,9 +159,8 @@ func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 			return err
 		}
 	}
-	cmd := format
 	if len(a) > 0 {
-		cmd = fmt.Sprintf(format, a...)
+		cmd = fmt.Sprintf(cmd, a...)
 	}
 	cmd = strings.TrimSpace(cmd) + string(d.EndMark)
 	if _, err := d.WriteString(cmd); err != nil {
@@ -176,7 +175,7 @@ func (d *Device) Command(ctx context.Context, format string, a ...any) error {
 // response string. The device's endmark character (newline by default) is
 // automatically added to the query command. The string returned is not
 // stripped of any whitespace. The context is used for cancellation; if the
-// context is cancelled while waiting for a response, Query returns the context
+// context is canceled while waiting for a response, Query returns the context
 // error.
 func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 	if err := d.Command(ctx, "%s", cmd); err != nil {
