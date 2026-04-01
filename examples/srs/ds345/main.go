@@ -7,8 +7,8 @@ package main
 
 import (
 	"context"
-	"flag"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
