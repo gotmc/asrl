@@ -14,14 +14,14 @@ import (
 )
 
 func Example() {
+	ctx := context.Background()
+
 	// Open a serial device using a VISA resource string.
-	dev, err := asrl.NewDevice("ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR")
+	dev, err := asrl.NewDevice(ctx, "ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer func() { _ = dev.Close() }()
-
-	ctx := context.Background()
 
 	// Query the instrument identification.
 	idn, err := dev.Query(ctx, "*IDN?")
@@ -37,8 +37,10 @@ func Example() {
 }
 
 func Example_withOptions() {
+	ctx := context.Background()
+
 	// Open a device with functional options.
-	dev, err := asrl.NewDevice(
+	dev, err := asrl.NewDevice(ctx,
 		"ASRL::/dev/tty.usbserial-PX8X3YR6::9600::8N2::INSTR",
 		asrl.WithHWHandshaking(true),
 	)
@@ -46,8 +48,6 @@ func Example_withOptions() {
 		log.Fatal(err)
 	}
 	defer func() { _ = dev.Close() }()
-
-	ctx := context.Background()
 
 	// With hardware handshaking enabled, Command polls DSR before writing.
 	if err := dev.Command(ctx, "SYST:REM"); err != nil {

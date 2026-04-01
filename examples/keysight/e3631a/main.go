@@ -53,7 +53,8 @@ func main() {
 	// Open virtual comm port.
 	address := fmt.Sprintf("ASRL::%s::9600::8N2::INSTR", serialPort)
 	log.Printf("VISA Address = %s", address)
-	dev, err := asrl.NewDevice(address, asrl.WithHWHandshaking(true))
+	ctx := context.Background()
+	dev, err := asrl.NewDevice(ctx, address, asrl.WithHWHandshaking(true))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,7 +63,6 @@ func main() {
 			log.Printf("error closing device: %v", err)
 		}
 	}()
-	ctx := context.Background()
 
 	// Query the identification of the function generator.
 	idn, err := dev.Query(ctx, "*IDN?")

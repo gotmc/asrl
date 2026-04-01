@@ -62,9 +62,14 @@ func WithReadTimeout(t time.Duration) DeviceOption {
 }
 
 // NewDevice opens a serial Device using the given VISA address resource string.
-// Optional DeviceOption values can be provided to override the default settings
-// for EndMark, HWHandshaking, DelayTime, and ReadTimeout.
-func NewDevice(address string, opts ...DeviceOption) (*Device, error) {
+// The context is checked before opening the serial port. Optional DeviceOption
+// values can be provided to override the default settings for EndMark,
+// HWHandshaking, DelayTime, and ReadTimeout.
+func NewDevice(ctx context.Context, address string, opts ...DeviceOption) (*Device, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	v, err := NewVisaResource(address)
 	if err != nil {
 		return nil, err
