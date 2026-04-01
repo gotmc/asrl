@@ -93,7 +93,7 @@ func NewDevice(address string, opts ...DeviceOption) (*Device, error) {
 		opt(d)
 	}
 	if err := port.SetReadTimeout(d.ReadTimeout); err != nil {
-		port.Close()
+		_ = port.Close()
 		return nil, fmt.Errorf("setting read timeout: %w", err)
 	}
 	return d, nil

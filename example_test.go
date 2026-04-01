@@ -19,7 +19,7 @@ func Example() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dev.Close()
+	defer func() { _ = dev.Close() }()
 
 	ctx := context.Background()
 
@@ -45,7 +45,7 @@ func Example_withOptions() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dev.Close()
+	defer func() { _ = dev.Close() }()
 
 	ctx := context.Background()
 
