@@ -67,7 +67,7 @@ func main() {
 	ctx := context.Background()
 
 	// Query the identification of the function generator.
-	idn, err := dev.Query(ctx, "*IDN?\r\n")
+	idn, err := dev.Query(ctx, "*IDN?")
 	if err != nil && !errors.Is(err, io.EOF) {
 		log.Fatalf("error querying serial port: %s", err)
 	}
