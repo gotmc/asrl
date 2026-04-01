@@ -117,34 +117,15 @@ func (d *Device) ReadContext(ctx context.Context, p []byte) (int, error) {
 }
 
 // WriteContext writes the given data to the serial port with context support.
-// If the context is canceled before the write completes, WriteContext returns
-// the context error.
+// If the context is already canceled before the write begins, WriteContext
+// returns the context error. Serial writes are typically non-blocking, so no
+// goroutine-based cancellation is needed.
 func (d *Device) WriteContext(ctx context.Context, p []byte) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}
 
-	type result struct {
-		n   int
-		err error
-	}
-	ch := make(chan result, 1)
-	go func() {
-		n, err := d.port.Write(p)
-		ch <- result{n, err}
-	}()
-
-	select {
-	case <-ctx.Done():
-		// Set a short read timeout to unblock the goroutine, then wait for
-		// it to finish so we don't leak it.
-		_ = d.port.SetReadTimeout(1 * time.Millisecond)
-		<-ch
-		_ = d.port.SetReadTimeout(d.ReadTimeout)
-		return 0, ctx.Err()
-	case r := <-ch:
-		return r.n, r.err
-	}
+	return d.port.Write(p)
 }
 
 // Command sends a SCPI/ASCII command to the serial port. The command can be
