@@ -16,11 +16,11 @@ import (
 
 // Sentinel errors returned by NewVisaResource.
 var (
-	ErrInvalidResource     = errors.New("visa: invalid VISA resource string")
+	ErrInvalidResource      = errors.New("visa: invalid VISA resource string")
 	ErrInvalidInterfaceType = errors.New("visa: interface type was not ASRL")
 	ErrInvalidResourceClass = errors.New("visa: resource class was not INSTR")
-	ErrInvalidBaud         = errors.New("visa: invalid baud")
-	ErrUnsupportedDataflow = errors.New("visa: unsupported dataflow")
+	ErrInvalidBaud          = errors.New("visa: invalid baud")
+	ErrUnsupportedDataflow  = errors.New("visa: unsupported dataflow")
 )
 
 var visaResourceRE = regexp.MustCompile(
