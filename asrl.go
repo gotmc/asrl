@@ -247,14 +247,12 @@ func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 	// If I use 40 ms instead of 50 ms for the delay time, the Keysight E3631A DC
 	// power supply will hang when sending commands/queries. Using 50 ms causes
 	// the power supply to hang sometimes. I'm currently using 70 ms to be safe.
-	deadline := time.Now().Add(d.ReadTimeout)
+	timeout := time.NewTimer(d.ReadTimeout)
+	defer timeout.Stop()
+	ticker := time.NewTicker(d.DelayTime)
+	defer ticker.Stop()
+
 	for {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("%w after %s", ErrDSRNotReady, d.ReadTimeout)
-		}
 		ready, err := isDSR(d.port)
 		if err != nil {
 			return err
@@ -262,8 +260,12 @@ func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 		if ready {
 			break
 		}
-		if err := sleepContext(ctx, d.DelayTime); err != nil {
-			return err
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeout.C:
+			return fmt.Errorf("%w after %s", ErrDSRNotReady, d.ReadTimeout)
+		case <-ticker.C:
 		}
 	}
 	// Sleep a bit longer once the Data Set Ready is true. Without this, the

@@ -37,12 +37,14 @@ just ds345 /dev/tty.usbserial-XXXX
 ## Key Details
 
 - **Entry point:** `NewDevice(address string, opts ...DeviceOption)` parses a VISA resource string via `NewVisaResource()`, then opens the serial port with the parsed settings. Functional options (`WithEndMark`, `WithHWHandshaking`, `WithDelayTime`, `WithReadTimeout`) configure the device at construction time.
-- `Command()` and `Query()` accept `context.Context` for cancellation support. `Command()` auto-appends the EndMark character and uses `WriteStringContext` internally. `Query()` sends a command then reads the response.
+- `Command()` and `Query()` accept `context.Context` for cancellation support. `Command()` auto-appends the EndMark character and uses `WriteStringContext` internally. `Query()` sends a command then reads the response. All delays use `sleepContext` which returns early on context cancellation.
 - `Query()` spawns a goroutine for the blocking `ReadString` call. On context cancellation, it sets a short read timeout to unblock the goroutine, waits for it to finish, then resets the reader — this prevents goroutine leaks and races on the `bufio.Reader`. `ReadContext` uses the same pattern for raw reads.
 - `WriteContext` checks context before writing but does not use a goroutine — serial writes are typically non-blocking, so `SetReadTimeout` cannot unblock them.
-- Hardware handshaking (`HWHandshaking`) is disabled by default. When enabled, `Command()` polls DSR before writing with a timeout based on `ReadTimeout`.
+- Hardware handshaking (`HWHandshaking`) is disabled by default. When enabled, `Command()` polls DSR via `time.Ticker`/`time.Timer` before writing, with a timeout based on `ReadTimeout`.
+- **Sentinel errors:** `ErrInvalidResource`, `ErrInvalidInterfaceType`, `ErrInvalidResourceClass`, `ErrInvalidBaud`, `ErrUnsupportedDataflow` (in `visa.go`) and `ErrDSRNotReady` (in `asrl.go`). All support `errors.Is()`.
 - `DelayTime` (default 70ms) is critical for reliable communication — values below ~50ms can cause hangs with certain instruments (e.g., Keysight E3631A).
 - `ReadTimeout` (default 5s) is set on the serial port and also used as the DSR polling deadline.
+- `Close()` uses `time.Sleep` (not context-aware) since it has no context parameter.
 - Only dependency: `go.bug.st/serial` for serial port access.
 
 ## Testing
