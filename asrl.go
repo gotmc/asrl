@@ -29,8 +29,41 @@ type Device struct {
 	reader        *bufio.Reader
 }
 
+// DeviceOption is a functional option for configuring a Device.
+type DeviceOption func(*Device)
+
+// WithEndMark sets the end-of-message byte used by Command and Query.
+func WithEndMark(b byte) DeviceOption {
+	return func(d *Device) {
+		d.EndMark = b
+	}
+}
+
+// WithHWHandshaking enables or disables hardware handshaking (DSR polling).
+func WithHWHandshaking(enabled bool) DeviceOption {
+	return func(d *Device) {
+		d.HWHandshaking = enabled
+	}
+}
+
+// WithDelayTime sets the delay between serial operations.
+func WithDelayTime(t time.Duration) DeviceOption {
+	return func(d *Device) {
+		d.DelayTime = t
+	}
+}
+
+// WithReadTimeout sets the read timeout on the serial port.
+func WithReadTimeout(t time.Duration) DeviceOption {
+	return func(d *Device) {
+		d.ReadTimeout = t
+	}
+}
+
 // NewDevice opens a serial Device using the given VISA address resource string.
-func NewDevice(address string) (*Device, error) {
+// Optional DeviceOption values can be provided to override the default settings
+// for EndMark, HWHandshaking, DelayTime, and ReadTimeout.
+func NewDevice(address string, opts ...DeviceOption) (*Device, error) {
 	v, err := NewVisaResource(address)
 	if err != nil {
 		return nil, err
@@ -54,6 +87,9 @@ func NewDevice(address string) (*Device, error) {
 		EndMark:       '\n',
 		DelayTime:     70 * time.Millisecond,
 		ReadTimeout:   5 * time.Second,
+	}
+	for _, opt := range opts {
+		opt(d)
 	}
 	if err := port.SetReadTimeout(d.ReadTimeout); err != nil {
 		port.Close()
