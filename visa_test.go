@@ -6,6 +6,7 @@
 package asrl
 
 import (
+	"errors"
 	"testing"
 
 	"go.bug.st/serial"
@@ -24,7 +25,7 @@ func TestParsingVisaResourceString(t *testing.T) {
 		parity         serial.Parity
 		stopBits       serial.StopBits
 		resourceClass  string
-		wantErr        string
+		wantErr        error
 	}{
 		{
 			name:           "9600 baud 8N2",
@@ -84,34 +85,34 @@ func TestParsingVisaResourceString(t *testing.T) {
 		{
 			name:           "completely invalid string",
 			resourceString: "not-a-visa-string",
-			wantErr:        "visa: invalid VISA resource string",
+			wantErr:        ErrInvalidResource,
 		},
 		{
 			name:           "unsupported dataflow",
 			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::9600::9N1::INSTR",
-			wantErr:        `visa: unsupported dataflow "9N1"`,
+			wantErr:        ErrUnsupportedDataflow,
 		},
 		{
 			name:           "empty string",
 			resourceString: "",
-			wantErr:        "visa: invalid VISA resource string",
+			wantErr:        ErrInvalidResource,
 		},
 		{
 			name:           "missing INSTR resource class",
 			resourceString: "ASRL::/dev/tty.usbserial-PX484GRU::9600::8N1::OTHER",
-			wantErr:        "visa: invalid VISA resource string",
+			wantErr:        ErrInvalidResource,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			resource, err := NewVisaResource(tc.resourceString)
-			if tc.wantErr != "" {
+			if tc.wantErr != nil {
 				if err == nil {
-					t.Fatalf("expected error %q, got nil", tc.wantErr)
+					t.Fatalf("expected error %v, got nil", tc.wantErr)
 				}
-				if err.Error() != tc.wantErr {
-					t.Fatalf("err = %q, want %q", err, tc.wantErr)
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("err = %v, want %v", err, tc.wantErr)
 				}
 				return
 			}

@@ -14,6 +14,15 @@ import (
 	"go.bug.st/serial"
 )
 
+// Sentinel errors returned by NewVisaResource.
+var (
+	ErrInvalidResource     = errors.New("visa: invalid VISA resource string")
+	ErrInvalidInterfaceType = errors.New("visa: interface type was not ASRL")
+	ErrInvalidResourceClass = errors.New("visa: resource class was not INSTR")
+	ErrInvalidBaud         = errors.New("visa: invalid baud")
+	ErrUnsupportedDataflow = errors.New("visa: unsupported dataflow")
+)
+
 var visaResourceRE = regexp.MustCompile(
 	`^(?P<interfaceType>ASRL)(?P<boardIndex>\d*)::` +
 		`(?P<address>[^\s]+)::` +
@@ -40,7 +49,7 @@ type VisaResource struct {
 func NewVisaResource(resourceString string) (*VisaResource, error) {
 	res := visaResourceRE.FindStringSubmatch(resourceString)
 	if res == nil {
-		return nil, errors.New("visa: invalid VISA resource string")
+		return nil, ErrInvalidResource
 	}
 	subexpNames := visaResourceRE.SubexpNames()
 	matchMap := map[string]string{}
@@ -49,11 +58,11 @@ func NewVisaResource(resourceString string) (*VisaResource, error) {
 	}
 
 	if matchMap["interfaceType"] != "ASRL" {
-		return nil, errors.New("visa: interface type was not ASRL")
+		return nil, ErrInvalidInterfaceType
 	}
 
 	if matchMap["resourceClass"] != "INSTR" {
-		return nil, errors.New("visa: resource class was not INSTR")
+		return nil, ErrInvalidResourceClass
 	}
 
 	visa := &VisaResource{
@@ -66,7 +75,7 @@ func NewVisaResource(resourceString string) (*VisaResource, error) {
 	if matchMap["baud"] != "" {
 		baud, err := strconv.Atoi(matchMap["baud"])
 		if err != nil {
-			return nil, fmt.Errorf("visa: invalid baud %q: %w", matchMap["baud"], err)
+			return nil, fmt.Errorf("%w %q: %w", ErrInvalidBaud, matchMap["baud"], err)
 		}
 		visa.baud = baud
 	}
@@ -94,7 +103,7 @@ func NewVisaResource(resourceString string) (*VisaResource, error) {
 			visa.parity = serial.OddParity
 			visa.stopBits = serial.OneStopBit
 		default:
-			return nil, fmt.Errorf("visa: unsupported dataflow %q", matchMap["dataflow"])
+			return nil, fmt.Errorf("%w %q", ErrUnsupportedDataflow, matchMap["dataflow"])
 		}
 	} else {
 		visa.dataBits = 8

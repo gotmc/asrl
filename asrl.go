@@ -12,12 +12,17 @@ package asrl
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"go.bug.st/serial"
 )
+
+// ErrDSRNotReady is returned when the Data Set Ready signal is not asserted
+// within the ReadTimeout period.
+var ErrDSRNotReady = errors.New("asrl: DSR not ready")
 
 // Device models a serial device and implements the ivi.Driver interface.
 type Device struct {
@@ -190,9 +195,8 @@ func (d *Device) Command(ctx context.Context, cmd string, a ...any) error {
 	if _, err := d.WriteStringContext(ctx, cmd); err != nil {
 		return err
 	}
-	time.Sleep(d.DelayTime)
 
-	return nil
+	return sleepContext(ctx, d.DelayTime)
 }
 
 // Query writes the given SCPI/ASCII command to the serial port and returns the
@@ -249,7 +253,7 @@ func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 			return err
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("asrl: DSR not ready after %s", d.ReadTimeout)
+			return fmt.Errorf("%w after %s", ErrDSRNotReady, d.ReadTimeout)
 		}
 		ready, err := isDSR(d.port)
 		if err != nil {
@@ -258,11 +262,25 @@ func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 		if ready {
 			break
 		}
-		time.Sleep(d.DelayTime)
+		if err := sleepContext(ctx, d.DelayTime); err != nil {
+			return err
+		}
 	}
 	// Sleep a bit longer once the Data Set Ready is true. Without this, the
 	// Keysight E3631A DC power supply will sometimes hang when sending
 	// commands/queries.
-	time.Sleep(d.DelayTime)
-	return nil
+	return sleepContext(ctx, d.DelayTime)
+}
+
+// sleepContext pauses for the given duration but returns early with the context
+// error if the context is canceled.
+func sleepContext(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
 }

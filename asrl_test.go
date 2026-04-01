@@ -344,8 +344,8 @@ func TestCommandHWHandshakingTimeout(t *testing.T) {
 	d.DelayTime = 1 * time.Millisecond
 	ctx := context.Background()
 	err := d.Command(ctx, "*RST")
-	if err == nil {
-		t.Fatal("expected DSR timeout error, got nil")
+	if !errors.Is(err, ErrDSRNotReady) {
+		t.Fatalf("err = %v, want %v", err, ErrDSRNotReady)
 	}
 }
 
