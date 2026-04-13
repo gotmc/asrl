@@ -20,7 +20,7 @@ import (
 // within the ReadTimeout period.
 var ErrDSRNotReady = errors.New("asrl: DSR not ready")
 
-// Device models a serial device and implements the ivi.Driver interface.
+// Device models a serial device and implements the ivi.Transport interface.
 type Device struct {
 	EndMark       byte
 	HWHandshaking bool
@@ -126,18 +126,11 @@ func (d *Device) WriteString(s string) (n int, err error) {
 	return d.Write([]byte(s))
 }
 
-// WriteStringContext writes a string to the serial port with context support.
-// An endmark character, such as a newline, is not automatically added to the
-// end of the string.
-func (d *Device) WriteStringContext(ctx context.Context, s string) (int, error) {
-	return d.WriteContext(ctx, []byte(s))
-}
-
-// ReadContext reads from the serial port into the given byte slice with context
-// support. If the context is canceled before the read completes, ReadContext
-// sets a short timeout to unblock the read, waits for the goroutine to finish,
-// resets the reader, and returns the context error.
-func (d *Device) ReadContext(ctx context.Context, p []byte) (int, error) {
+// ReadBinary reads binary data from the serial port without terminator
+// interpretation. If the context is canceled before the read completes,
+// ReadBinary sets a short timeout to unblock the read, waits for the goroutine
+// to finish, and returns the context error.
+func (d *Device) ReadBinary(ctx context.Context, p []byte) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}
@@ -165,11 +158,11 @@ func (d *Device) ReadContext(ctx context.Context, p []byte) (int, error) {
 	}
 }
 
-// WriteContext writes the given data to the serial port with context support.
-// If the context is already canceled before the write begins, WriteContext
-// returns the context error. Serial writes are typically non-blocking, so no
-// goroutine-based cancellation is needed.
-func (d *Device) WriteContext(ctx context.Context, p []byte) (int, error) {
+// WriteBinary writes binary data to the serial port without adding a
+// terminator. If the context is already canceled before the write begins,
+// WriteBinary returns the context error. Serial writes are typically
+// non-blocking, so no goroutine-based cancellation is needed.
+func (d *Device) WriteBinary(ctx context.Context, p []byte) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}
@@ -193,7 +186,7 @@ func (d *Device) Command(ctx context.Context, cmd string, a ...any) error {
 		cmd = fmt.Sprintf(cmd, a...)
 	}
 	cmd = strings.TrimSpace(cmd) + string(d.EndMark)
-	if _, err := d.WriteStringContext(ctx, cmd); err != nil {
+	if _, err := d.WriteBinary(ctx, []byte(cmd)); err != nil {
 		return err
 	}
 

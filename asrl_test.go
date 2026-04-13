@@ -141,30 +141,30 @@ func TestCloseError(t *testing.T) {
 	}
 }
 
-func TestWriteContext(t *testing.T) {
+func TestWriteBinary(t *testing.T) {
 	t.Parallel()
 	mp := newMockPort("")
 	d := newTestDevice(mp)
 	ctx := context.Background()
-	n, err := d.WriteContext(ctx, []byte("data"))
+	n, err := d.WriteBinary(ctx, []byte("data"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if n != 4 {
-		t.Errorf("WriteContext returned %d, want 4", n)
+		t.Errorf("WriteBinary returned %d, want 4", n)
 	}
 	if got := mp.writeBuf.String(); got != "data" {
 		t.Errorf("written = %q, want %q", got, "data")
 	}
 }
 
-func TestWriteContextCanceled(t *testing.T) {
+func TestWriteBinaryCanceled(t *testing.T) {
 	t.Parallel()
 	mp := newMockPort("")
 	d := newTestDevice(mp)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := d.WriteContext(ctx, []byte("data"))
+	_, err := d.WriteBinary(ctx, []byte("data"))
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v, want context.Canceled", err)
 	}
@@ -173,42 +173,28 @@ func TestWriteContextCanceled(t *testing.T) {
 	}
 }
 
-func TestWriteStringContext(t *testing.T) {
-	t.Parallel()
-	mp := newMockPort("")
-	d := newTestDevice(mp)
-	ctx := context.Background()
-	n, err := d.WriteStringContext(ctx, "hello")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if n != 5 {
-		t.Errorf("WriteStringContext returned %d, want 5", n)
-	}
-}
-
-func TestReadContext(t *testing.T) {
+func TestReadBinary(t *testing.T) {
 	t.Parallel()
 	mp := newMockPort("response")
 	d := newTestDevice(mp)
 	ctx := context.Background()
 	buf := make([]byte, 16)
-	n, err := d.ReadContext(ctx, buf)
+	n, err := d.ReadBinary(ctx, buf)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if got := string(buf[:n]); got != "response" {
-		t.Errorf("ReadContext = %q, want %q", got, "response")
+		t.Errorf("ReadBinary = %q, want %q", got, "response")
 	}
 }
 
-func TestReadContextCanceled(t *testing.T) {
+func TestReadBinaryCanceled(t *testing.T) {
 	t.Parallel()
 	mp := newMockPort("")
 	d := newTestDevice(mp)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := d.ReadContext(ctx, make([]byte, 16))
+	_, err := d.ReadBinary(ctx, make([]byte, 16))
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v, want context.Canceled", err)
 	}
