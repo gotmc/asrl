@@ -21,7 +21,7 @@ func Example() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() { _ = dev.Close() }()
+	defer dev.Close()
 
 	// Query the instrument identification.
 	idn, err := dev.Query(ctx, "*IDN?")
@@ -36,21 +36,78 @@ func Example() {
 	}
 }
 
-func Example_withOptions() {
+func ExampleNewDevice() {
 	ctx := context.Background()
+	dev, err := asrl.NewDevice(ctx, "ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dev.Close()
 
-	// Open a device with functional options.
+	fmt.Println("opened serial device")
+}
+
+func ExampleNewDevice_withOptions() {
+	ctx := context.Background()
 	dev, err := asrl.NewDevice(ctx,
 		"ASRL::/dev/tty.usbserial-PX8X3YR6::9600::8N2::INSTR",
 		asrl.WithHWHandshaking(true),
+		asrl.WithDelayTime(100),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() { _ = dev.Close() }()
+	defer dev.Close()
 
-	// With hardware handshaking enabled, Command polls DSR before writing.
-	if err := dev.Command(ctx, "SYST:REM"); err != nil {
+	fmt.Println("opened serial device with hardware handshaking")
+}
+
+func ExampleNewVisaResource() {
+	v, err := asrl.NewVisaResource("ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR")
+	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(v.InterfaceType())
+	fmt.Println(v.Address())
+	fmt.Println(v.Baud())
+
+	// Output:
+	// ASRL
+	// /dev/tty.usbserial-PX484GRU
+	// 9600
+}
+
+func ExampleDevice_Command() {
+	ctx := context.Background()
+	dev, err := asrl.NewDevice(ctx, "ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dev.Close()
+
+	// Command sends a SCPI command with an auto-appended endmark character.
+	if err := dev.Command(ctx, "*RST"); err != nil {
+		log.Fatal(err)
+	}
+
+	// Command supports fmt.Sprintf-style formatting.
+	if err := dev.Command(ctx, "VOLT %f", 5.0); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func ExampleDevice_Query() {
+	ctx := context.Background()
+	dev, err := asrl.NewDevice(ctx, "ASRL::/dev/tty.usbserial-PX484GRU::9600::8N2::INSTR")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dev.Close()
+
+	// Query sends a command and reads the response.
+	idn, err := dev.Query(ctx, "*IDN?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(idn)
 }

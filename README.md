@@ -20,13 +20,12 @@ the [Interchangeable Virtual Instrument (IVI) standard][ivi-specs].
 ## Usage
 
 ```go
-dev, err := asrl.NewDevice("ASRL::/dev/tty.usbserial-PX8X3YR6::9600::8N2::INSTR")
+ctx := context.Background()
+dev, err := asrl.NewDevice(ctx, "ASRL::/dev/tty.usbserial-PX8X3YR6::9600::8N2::INSTR")
 if err != nil {
     log.Fatal(err)
 }
 defer dev.Close()
-
-ctx := context.Background()
 
 // Query the instrument identification.
 idn, err := dev.Query(ctx, "*IDN?")
