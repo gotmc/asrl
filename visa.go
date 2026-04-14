@@ -77,6 +77,9 @@ func NewVisaResource(resourceString string) (*VisaResource, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%w %q: %w", ErrInvalidBaud, matchMap["baud"], err)
 		}
+		if baud <= 0 {
+			return nil, fmt.Errorf("%w: %d", ErrInvalidBaud, baud)
+		}
 		visa.baud = baud
 	}
 

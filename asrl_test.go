@@ -70,9 +70,9 @@ func newTestDevice(mp *mockPort) *Device {
 	return &Device{
 		port:        mp,
 		reader:      bufio.NewReader(mp),
-		EndMark:     '\n',
-		DelayTime:   1 * time.Millisecond,
-		ReadTimeout: 100 * time.Millisecond,
+		endMark:     '\n',
+		delayTime:   1 * time.Millisecond,
+		readTimeout: 100 * time.Millisecond,
 	}
 }
 
@@ -297,7 +297,7 @@ func TestCommandWithHWHandshaking(t *testing.T) {
 	mp := newMockPort("")
 	mp.dsrReady = true
 	d := newTestDevice(mp)
-	d.HWHandshaking = true
+	d.hwHandshaking = true
 	ctx := context.Background()
 	if err := d.Command(ctx, "*RST"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -312,7 +312,7 @@ func TestCommandHWHandshakingDSRError(t *testing.T) {
 	mp := newMockPort("")
 	mp.dsrErr = errors.New("modem error")
 	d := newTestDevice(mp)
-	d.HWHandshaking = true
+	d.hwHandshaking = true
 	ctx := context.Background()
 	err := d.Command(ctx, "*RST")
 	if err == nil {
@@ -325,9 +325,9 @@ func TestCommandHWHandshakingTimeout(t *testing.T) {
 	mp := newMockPort("")
 	mp.dsrReady = false
 	d := newTestDevice(mp)
-	d.HWHandshaking = true
-	d.ReadTimeout = 5 * time.Millisecond
-	d.DelayTime = 1 * time.Millisecond
+	d.hwHandshaking = true
+	d.readTimeout = 5 * time.Millisecond
+	d.delayTime = 1 * time.Millisecond
 	ctx := context.Background()
 	err := d.Command(ctx, "*RST")
 	if !errors.Is(err, ErrDSRNotReady) {
@@ -383,8 +383,8 @@ func TestDeviceOptions(t *testing.T) {
 		mp := newMockPort("")
 		d := newTestDevice(mp)
 		WithEndMark('\r')(d)
-		if d.EndMark != '\r' {
-			t.Errorf("EndMark = %q, want %q", d.EndMark, '\r')
+		if d.endMark != '\r' {
+			t.Errorf("endMark = %q, want %q", d.endMark, '\r')
 		}
 	})
 
@@ -393,8 +393,8 @@ func TestDeviceOptions(t *testing.T) {
 		mp := newMockPort("")
 		d := newTestDevice(mp)
 		WithHWHandshaking(true)(d)
-		if !d.HWHandshaking {
-			t.Error("HWHandshaking = false, want true")
+		if !d.hwHandshaking {
+			t.Error("hwHandshaking = false, want true")
 		}
 	})
 
@@ -403,8 +403,8 @@ func TestDeviceOptions(t *testing.T) {
 		mp := newMockPort("")
 		d := newTestDevice(mp)
 		WithDelayTime(100 * time.Millisecond)(d)
-		if d.DelayTime != 100*time.Millisecond {
-			t.Errorf("DelayTime = %v, want %v", d.DelayTime, 100*time.Millisecond)
+		if d.delayTime != 100*time.Millisecond {
+			t.Errorf("delayTime = %v, want %v", d.delayTime, 100*time.Millisecond)
 		}
 	})
 
@@ -413,8 +413,8 @@ func TestDeviceOptions(t *testing.T) {
 		mp := newMockPort("")
 		d := newTestDevice(mp)
 		WithReadTimeout(10 * time.Second)(d)
-		if d.ReadTimeout != 10*time.Second {
-			t.Errorf("ReadTimeout = %v, want %v", d.ReadTimeout, 10*time.Second)
+		if d.readTimeout != 10*time.Second {
+			t.Errorf("readTimeout = %v, want %v", d.readTimeout, 10*time.Second)
 		}
 	})
 }
@@ -423,7 +423,7 @@ func TestCommandWithCustomEndMark(t *testing.T) {
 	t.Parallel()
 	mp := newMockPort("")
 	d := newTestDevice(mp)
-	d.EndMark = '\r'
+	d.endMark = '\r'
 	ctx := context.Background()
 	if err := d.Command(ctx, "*RST"); err != nil {
 		t.Fatalf("unexpected error: %v", err)

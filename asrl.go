@@ -22,13 +22,37 @@ var ErrDSRNotReady = errors.New("asrl: DSR not ready")
 
 // Device models a serial device and implements the ivi.Transport interface.
 type Device struct {
-	EndMark       byte
-	HWHandshaking bool
-	DelayTime     time.Duration
-	ReadTimeout   time.Duration
+	endMark       byte
+	hwHandshaking bool
+	delayTime     time.Duration
+	readTimeout   time.Duration
 	port          serial.Port
 	reader        *bufio.Reader
 }
+
+// EndMark returns the end-of-message byte used by Command and Query.
+func (d *Device) EndMark() byte { return d.endMark }
+
+// SetEndMark sets the end-of-message byte used by Command and Query.
+func (d *Device) SetEndMark(b byte) { d.endMark = b }
+
+// HWHandshaking returns whether hardware handshaking (DSR polling) is enabled.
+func (d *Device) HWHandshaking() bool { return d.hwHandshaking }
+
+// SetHWHandshaking enables or disables hardware handshaking (DSR polling).
+func (d *Device) SetHWHandshaking(enabled bool) { d.hwHandshaking = enabled }
+
+// DelayTime returns the delay between serial operations.
+func (d *Device) DelayTime() time.Duration { return d.delayTime }
+
+// SetDelayTime sets the delay between serial operations.
+func (d *Device) SetDelayTime(t time.Duration) { d.delayTime = t }
+
+// ReadTimeout returns the read timeout on the serial port.
+func (d *Device) ReadTimeout() time.Duration { return d.readTimeout }
+
+// SetReadTimeout sets the read timeout on the serial port.
+func (d *Device) SetReadTimeout(t time.Duration) { d.readTimeout = t }
 
 // DeviceOption is a functional option for configuring a Device.
 type DeviceOption func(*Device)
@@ -36,28 +60,28 @@ type DeviceOption func(*Device)
 // WithEndMark sets the end-of-message byte used by Command and Query.
 func WithEndMark(b byte) DeviceOption {
 	return func(d *Device) {
-		d.EndMark = b
+		d.endMark = b
 	}
 }
 
 // WithHWHandshaking enables or disables hardware handshaking (DSR polling).
 func WithHWHandshaking(enabled bool) DeviceOption {
 	return func(d *Device) {
-		d.HWHandshaking = enabled
+		d.hwHandshaking = enabled
 	}
 }
 
 // WithDelayTime sets the delay between serial operations.
 func WithDelayTime(t time.Duration) DeviceOption {
 	return func(d *Device) {
-		d.DelayTime = t
+		d.delayTime = t
 	}
 }
 
 // WithReadTimeout sets the read timeout on the serial port.
 func WithReadTimeout(t time.Duration) DeviceOption {
 	return func(d *Device) {
-		d.ReadTimeout = t
+		d.readTimeout = t
 	}
 }
 
@@ -89,15 +113,15 @@ func NewDevice(ctx context.Context, address string, opts ...DeviceOption) (*Devi
 	d := &Device{
 		port:          port,
 		reader:        bufio.NewReader(port),
-		HWHandshaking: false,
-		EndMark:       '\n',
-		DelayTime:     70 * time.Millisecond,
-		ReadTimeout:   5 * time.Second,
+		hwHandshaking: false,
+		endMark:       '\n',
+		delayTime:     70 * time.Millisecond,
+		readTimeout:   5 * time.Second,
 	}
 	for _, opt := range opts {
 		opt(d)
 	}
-	if err := port.SetReadTimeout(d.ReadTimeout); err != nil {
+	if err := port.SetReadTimeout(d.readTimeout); err != nil {
 		_ = port.Close()
 		return nil, fmt.Errorf("setting read timeout: %w", err)
 	}
@@ -106,7 +130,7 @@ func NewDevice(ctx context.Context, address string, opts ...DeviceOption) (*Devi
 
 // Close closes the underlying serial port.
 func (d *Device) Close() error {
-	time.Sleep(d.DelayTime)
+	time.Sleep(d.delayTime)
 	return d.port.Close()
 }
 
@@ -151,7 +175,7 @@ func (d *Device) ReadBinary(ctx context.Context, p []byte) (int, error) {
 		// then wait for it to finish so we don't leak it.
 		_ = d.port.SetReadTimeout(1 * time.Millisecond)
 		<-ch
-		_ = d.port.SetReadTimeout(d.ReadTimeout)
+		_ = d.port.SetReadTimeout(d.readTimeout)
 		return 0, ctx.Err()
 	case r := <-ch:
 		return r.n, r.err
@@ -177,7 +201,7 @@ func (d *Device) Command(ctx context.Context, cmd string, a ...any) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if d.HWHandshaking {
+	if d.hwHandshaking {
 		if err := d.napIfDataSetNotReady(ctx); err != nil {
 			return err
 		}
@@ -185,12 +209,12 @@ func (d *Device) Command(ctx context.Context, cmd string, a ...any) error {
 	if len(a) > 0 {
 		cmd = fmt.Sprintf(cmd, a...)
 	}
-	cmd = strings.TrimSpace(cmd) + string(d.EndMark)
+	cmd = strings.TrimSpace(cmd) + string(d.endMark)
 	if _, err := d.WriteBinary(ctx, []byte(cmd)); err != nil {
 		return err
 	}
 
-	return sleepContext(ctx, d.DelayTime)
+	return sleepContext(ctx, d.delayTime)
 }
 
 // Query writes the given SCPI/ASCII command to the serial port and returns the
@@ -210,7 +234,7 @@ func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 	}
 	ch := make(chan result, 1)
 	go func() {
-		s, err := d.reader.ReadString(d.EndMark)
+		s, err := d.reader.ReadString(d.endMark)
 		ch <- result{s, err}
 	}()
 
@@ -221,7 +245,7 @@ func (d *Device) Query(ctx context.Context, cmd string) (string, error) {
 		// race on the bufio.Reader.
 		_ = d.port.SetReadTimeout(1 * time.Millisecond)
 		<-ch
-		_ = d.port.SetReadTimeout(d.ReadTimeout)
+		_ = d.port.SetReadTimeout(d.readTimeout)
 		d.reader.Reset(d.port)
 		return "", ctx.Err()
 	case r := <-ch:
@@ -241,9 +265,9 @@ func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 	// If I use 40 ms instead of 50 ms for the delay time, the Keysight E3631A DC
 	// power supply will hang when sending commands/queries. Using 50 ms causes
 	// the power supply to hang sometimes. I'm currently using 70 ms to be safe.
-	timeout := time.NewTimer(d.ReadTimeout)
+	timeout := time.NewTimer(d.readTimeout)
 	defer timeout.Stop()
-	ticker := time.NewTicker(d.DelayTime)
+	ticker := time.NewTicker(d.delayTime)
 	defer ticker.Stop()
 
 	for {
@@ -258,14 +282,14 @@ func (d *Device) napIfDataSetNotReady(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timeout.C:
-			return fmt.Errorf("%w after %s", ErrDSRNotReady, d.ReadTimeout)
+			return fmt.Errorf("%w after %s", ErrDSRNotReady, d.readTimeout)
 		case <-ticker.C:
 		}
 	}
 	// Sleep a bit longer once the Data Set Ready is true. Without this, the
 	// Keysight E3631A DC power supply will sometimes hang when sending
 	// commands/queries.
-	return sleepContext(ctx, d.DelayTime)
+	return sleepContext(ctx, d.delayTime)
 }
 
 // sleepContext pauses for the given duration but returns early with the context
